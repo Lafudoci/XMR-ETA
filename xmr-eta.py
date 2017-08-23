@@ -1,4 +1,4 @@
-import json, requests
+import json, requests, statistics 
 
 from pprint import pprint
 
@@ -29,19 +29,22 @@ if data_pool['status'] == 'success':
 	n=0
 	num=0
 	poolsize=0
-	small_tx_size=0
-	txs=0
+	small_txs=[]
 	big_txs=[]
 	while n < data_pool['data']['txs_no']:
 		txs_size = data_pool['data']['txs'][num]['tx_size']
 		poolsize = txs_size + poolsize
-		if txs_size < 20480:
-			small_tx_size = txs_size + small_tx_size
-		if txs_size >= 20480:
+		if txs_size < 40960:
+			small_txs.append ( data_pool['data']['txs'][num]['tx_size'] )
+		else:
 			big_txs.append ( data_pool['data']['txs'][num]['tx_size'] )
 		num = num + 1
 		n = n + 1
-	avg_big_txs = sum(big_txs)/len(big_txs)
+	med_small_tx = statistics.median(small_txs)
+	if len(big_txs) == 0:
+		med_big_tx = 0
+	else:
+		med_big_tx = statistics.median(big_txs)
 else:
 	print(' ERROR:'+ data_pool['error'])
 
@@ -84,28 +87,40 @@ else:
 if data_info['status'] and data_txs['status'] and data_pool['status'] == 'success':
 # wait time caculation
 #	wait_block = int(poolsize / avg_block_size)
-
-	bigs, rest = divmod(blimit/2, avg_big_txs)
-
-	wait_block = int(small_tx_size / rest)
-
-	if wait_block < 1:
-		wait_block = 1
+	bigs = 0
+	rest = 0
+	if med_big_tx == 0:
+		rest = sum(small_txs)
+		wait_block = int( rest / blimit/2 + 1)
+	
+	elif len(big_txs) == 1:
+		rest = blimit/2 - med_big_tx
+		wait_block = int( sum(small_txs) / rest + 1)
+	
+	else:
+		bigs, rest = divmod(blimit/2, med_big_tx)
+		wait_block = int( sum(small_txs) / rest + 1)
 
 	wait_hr, wait_min = divmod((wait_block * 2), 60)
+
+	block_fill = format((avg_block_size/blimit)*100, '.2f')
 
 
 #	print(big_txs)
 	print("\n")
 	print(" Height: "+ str(height) + "\n")
 	print(" Last block hash:\n "+ str(lasthash) + "\n")
-	print(" Block size limit: "+ str(format(blimit/1024, '.2f')+ " kB\n"))
+	print(" Block size limit: %s kB\n" % (str(format(blimit/1024, '.2f') )))
 	print(" Mempool txs: "+ str(pooltxs) + "\n")
 	print(" Mempool txs size: "+ str(format(poolsize/1024, '.2f')) + " kB\n")
-	print(" Small txs size: "+ str(format(small_tx_size/1024, '.2f')) + " kB\n")
-	print(" Avg. size of last 30 blocks: "+ str(format(avg_block_size/1024, '.2f')) + " kB\n")
+	print(" Med. Small tx: "+ str(format(med_small_tx/1024, '.2f')) + " kB\n")
+	print(" Med. big tx: "+ str(format(med_big_tx/1024, '.2f')) + " kB\n")
+	print(" Half block block limit: %s kB\n" % (str(format(blimit/1024/2, '.2f') )))
+	print(" Avg. of last 30 blocks: "+ str(format(avg_block_size/1024, '.2f')) + " kB\n")
 	print(" Approx. tx speed per hour: "+ str(format(txs, '.0f')) + " TPH\n")
 
+	print(' Predicted block: %d big_txs + %d small_tx\n' % (int(bigs), int(rest/med_small_tx)))
+	print(' Block usage: ' + str(block_fill) + '%\n')
 	print(' Average wait time: %d blocks ( %d hr: %d min )\n' % (wait_block, wait_hr, wait_min))
 else:
 	print(' ERROR: Data source is unavailabe.')
