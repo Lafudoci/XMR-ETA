@@ -29,12 +29,19 @@ if data_pool['status'] == 'success':
 	n=0
 	num=0
 	poolsize=0
+	small_tx_size=0
 	txs=0
+	big_txs=[]
 	while n < data_pool['data']['txs_no']:
 		txs_size = data_pool['data']['txs'][num]['tx_size']
 		poolsize = txs_size + poolsize
+		if txs_size < 20480:
+			small_tx_size = txs_size + small_tx_size
+		if txs_size >= 20480:
+			big_txs.append ( data_pool['data']['txs'][num]['tx_size'] )
 		num = num + 1
 		n = n + 1
+	avg_big_txs = sum(big_txs)/len(big_txs)
 else:
 	print(' ERROR:'+ data_pool['error'])
 
@@ -52,7 +59,7 @@ if data_txs['status'] == 'success':
 	print(" ======================")
 	n=0
 	num=0
-	block_sizes=0
+	block_size_sum=0
 	txs=0
 	while n<30:
 		block_size = data_txs['data']['blocks'][num]['size']
@@ -60,35 +67,46 @@ if data_txs['status'] == 'success':
 		block_txs = len(data_txs['data']['blocks'][num]['txs'])
 
 		print(" Height "+ str(block_height) + ": " + str(block_size) + " ( " + str(block_txs) + " txs )")
-		
+
 		txs = block_txs + txs
-		block_sizes = block_size + block_sizes
+		block_size_sum = block_size + block_size_sum
 		num = num + 1
 		n = n + 1
 	print(" ======================")
 
-	avg_size = format(block_sizes/30/1024, '.2f')
-	tph = format(txs, '.0f')
+	avg_block_size = block_size_sum / 30
+
 else:
 	print(' ERROR:'+ data_txs['error'])
-
-
-
-
 
 
 # caculate and print information
 if data_info['status'] and data_txs['status'] and data_pool['status'] == 'success':
 # wait time caculation
-#        wait_time = poolsize / 
+#	wait_block = int(poolsize / avg_block_size)
+
+	bigs, rest = divmod(blimit/2, avg_big_txs)
+
+	wait_block = int(small_tx_size / rest)
+
+	if wait_block < 1:
+		wait_block = 1
+
+	wait_hr, wait_min = divmod((wait_block * 2), 60)
+
+
+#	print(big_txs)
 	print("\n")
 	print(" Height: "+ str(height) + "\n")
+	print(" Last block hash:\n "+ str(lasthash) + "\n")
 	print(" Block size limit: "+ str(format(blimit/1024, '.2f')+ " kB\n"))
 	print(" Mempool txs: "+ str(pooltxs) + "\n")
 	print(" Mempool txs size: "+ str(format(poolsize/1024, '.2f')) + " kB\n")
-	print(" Last block hash:\n "+ str(lasthash) + "\n")
-	print(" Avg. size of last 25 blocks: "+ str(avg_size) + " kB\n")
-	print(" Approx. tx speed per hour: "+ str(tph) + " TPH\n")
+	print(" Small txs size: "+ str(format(small_tx_size/1024, '.2f')) + " kB\n")
+	print(" Avg. size of last 30 blocks: "+ str(format(avg_block_size/1024, '.2f')) + " kB\n")
+	print(" Approx. tx speed per hour: "+ str(format(txs, '.0f')) + " TPH\n")
+
+	print(' Average wait time: %d blocks ( %d hr: %d min )\n' % (wait_block, wait_hr, wait_min))
 else:
 	print(' ERROR: Data source is unavailabe.')
 
