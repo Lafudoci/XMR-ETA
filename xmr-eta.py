@@ -10,10 +10,10 @@ data_info = json.loads(resp_info.text)
 
 if data_info['status'] == 'success':
 	print(' OK')
-	height = str(data_info['data']['height'])
-	blimit = str(data_info['data']['block_size_limit'])
-	pooltxs = str(data_info['data']['tx_pool_size'])
-	lasthash = str(data_info['data']['top_block_hash'])
+	height = data_info['data']['height']
+	blimit = data_info['data']['block_size_limit']
+	pooltxs = data_info['data']['tx_pool_size']
+	lasthash = data_info['data']['top_block_hash']
 else:
 	print(' ERROR:'+ data_info['error'])
 
@@ -67,21 +67,26 @@ if data_txs['status'] == 'success':
 		n = n + 1
 	print(" ======================")
 
-	avg_size = format(block_sizes/25/1024, '.2f')
+	avg_size = format(block_sizes/30/1024, '.2f')
 	tph = format(txs, '.0f')
 else:
 	print(' ERROR:'+ data_txs['error'])
 
 
 
-# print information
+
+
+
+# caculate and print information
 if data_info['status'] and data_txs['status'] and data_pool['status'] == 'success':
+# wait time caculation
+#        wait_time = poolsize / 
 	print("\n")
-	print(" Height: "+ height + "\n")
-	print(" Block size limit: "+ blimit + "\n")
-	print(" Mempool txs: "+ pooltxs + "\n")
-	print(" Mempool txs size: "+ str(format(poolsize/1024, '.2f')) + "kB\n")
-	print(" Last block hash:\n "+ lasthash + "\n")
+	print(" Height: "+ str(height) + "\n")
+	print(" Block size limit: "+ str(format(blimit/1024, '.2f')+ " kB\n"))
+	print(" Mempool txs: "+ str(pooltxs) + "\n")
+	print(" Mempool txs size: "+ str(format(poolsize/1024, '.2f')) + " kB\n")
+	print(" Last block hash:\n "+ str(lasthash) + "\n")
 	print(" Avg. size of last 25 blocks: "+ str(avg_size) + " kB\n")
 	print(" Approx. tx speed per hour: "+ str(tph) + " TPH\n")
 else:
