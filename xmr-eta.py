@@ -89,6 +89,7 @@ if data_info['status'] and data_txs['status'] and data_pool['status'] == 'succes
 #	wait_block = int(poolsize / avg_block_size)
 	bigs = 0
 	rest = 0
+	smalls = 0
 	if med_big_tx == 0:
 		rest = sum(small_txs)
 		wait_block = int( rest / blimit/2 + 1)
@@ -105,6 +106,11 @@ if data_info['status'] and data_txs['status'] and data_pool['status'] == 'succes
 
 	block_fill = format((avg_block_size/blimit)*100, '.2f')
 
+	if rest/med_small_tx > len(small_txs):
+		smalls = len(small_txs)
+	else:
+		smalls = int(rest/med_small_tx)
+
 
 #	print(big_txs)
 	print("\n")
@@ -117,10 +123,10 @@ if data_info['status'] and data_txs['status'] and data_pool['status'] == 'succes
 	print(" Med. big tx: "+ str(format(med_big_tx/1024, '.2f')) + " kB\n")
 	print(" Half block block limit: %s kB\n" % (str(format(blimit/1024/2, '.2f') )))
 	print(" Avg. of last 30 blocks: "+ str(format(avg_block_size/1024, '.2f')) + " kB\n")
+	print(' Block usage: ' + str(block_fill) + '%\n')
 	print(" Approx. tx speed per hour: "+ str(format(txs, '.0f')) + " TPH\n")
 
-	print(' Predicted block: %d big_txs + %d small_tx\n' % (int(bigs), int(rest/med_small_tx)))
-	print(' Block usage: ' + str(block_fill) + '%\n')
+	print(' Predicted block: %d big_txs + %d small_tx\n' % (int(bigs), int(smalls)))
 	print(' Average wait time: %d blocks ( %d hr: %d min )\n' % (wait_block, wait_hr, wait_min))
 else:
 	print(' ERROR: Data source is unavailabe.')
