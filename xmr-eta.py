@@ -4,7 +4,7 @@ from pprint import pprint
 
 # get network data
 url_info = 'http://xmrchain.net/api/networkinfo'
-print("\n Connecting to: "+ url_info[7:])
+print('\n Connecting to: '+ url_info[7:])
 resp_info = requests.get(url=url_info)
 data_info = json.loads(resp_info.text)
 
@@ -19,8 +19,8 @@ else:
 
 
 # get last mempool data
-url_pool = 'https://xmrchain.net/api/mempool'
-print("\n Connecting to: "+ url_pool[7:])
+url_pool = 'http://xmrchain.net/api/mempool'
+print('\n Connecting to: '+ url_pool[7:])
 resp_pool = requests.get(url=url_pool)
 data_pool = json.loads(resp_pool.text)
 
@@ -50,16 +50,16 @@ else:
 
 
 # get last 30 txs data
-url_txs = 'https://xmrchain.net/api/transactions?limit=30'
-print("\n Connecting to: "+ url_txs[7:])
+url_txs = 'http://xmrchain.net/api/transactions?limit=30'
+print('\n Connecting to: '+ url_txs[7:])
 resp_txs = requests.get(url=url_txs)
 data_txs = json.loads(resp_txs.text)
 
 
 if data_txs['status'] == 'success':
 	print(' OK')
-	print("\n Last 30 blocks (Byte):")
-	print(" ======================")
+	print('\n Last 30 blocks (Byte):')
+	print(' ======================')
 	n=0
 	num=0
 	block_size_sum=0
@@ -69,13 +69,13 @@ if data_txs['status'] == 'success':
 		block_height = data_txs['data']['blocks'][num]['height']
 		block_txs = len(data_txs['data']['blocks'][num]['txs'])
 
-		print(" Height "+ str(block_height) + ": " + str(block_size) + " ( " + str(block_txs) + " txs )")
+		print(' Height '+ str(block_height) + ': ' + str(block_size) + ' ( ' + str(block_txs) + ' txs )')
 
 		txs = block_txs + txs
 		block_size_sum = block_size + block_size_sum
 		num = num + 1
 		n = n + 1
-	print(" ======================")
+	print(' ======================')
 
 	avg_block_size = block_size_sum / 30
 
@@ -104,7 +104,7 @@ if data_info['status'] and data_txs['status'] and data_pool['status'] == 'succes
 
 	wait_hr, wait_min = divmod((wait_block * 2), 60)
 
-	block_fill = format((avg_block_size/(blimit/2))*100, '.2f')
+	block_fill = avg_block_size/(blimit/2)*100
 
 	if rest/med_small_tx > len(small_txs):
 		smalls = len(small_txs)
@@ -115,19 +115,19 @@ if data_info['status'] and data_txs['status'] and data_pool['status'] == 'succes
 
 
 #	print(big_txs)
-	print("\n")
-	print(" Height: "+ str(height) + "\n")
-	print(" Last block hash:\n "+ str(lasthash) + "\n")
-	print(" Block size limit: %s kB\n" % (str(format(blimit/1024, '.2f') )))
-	print(" Predicted blockchain size per day: %s mB\n" % (str(format(block_mb_day, '.2f') )))
-	print(" Mempool txs: "+ str(pooltxs) + "\n")
-	print(" Mempool txs size: "+ str(format(poolsize/1024, '.2f')) + " kB\n")
-	print(" Med. Small tx: %.2f kB (%d txs)\n" % (med_small_tx/1024, len(small_txs)))
-	print(" Med. big tx: %2f kB (%d txs)\n" % (med_big_tx/1024, len(big_txs)))
-	print(" Half block block limit: %s kB\n" % (str(format(blimit/1024/2, '.2f') )))
-	print(" Avg. of last 30 blocks: "+ str(format(avg_block_size/1024, '.2f')) + " kB\n")
-	print(' Block usage: ' + str(block_fill) + '%\n')
-	print(" Approx. tx speed per hour: "+ str(format(txs, '.0f')) + " TPH\n")
+	print('\n')
+	print(' Height: %d\n' % height )
+	print(' Last block hash:\n %s' % lasthash)
+	print(' Block size limit: %f kB\n' % (blimit/1024) )
+	print(' Predicted blockchain size per day: %.2f mB\n' % block_mb_day )
+	print(' Mempool txs: %d\n' % pooltxs)
+	print(' Mempool txs size: %.2f kB\n' % (poolsize/1024) )
+	print(' Med. Small tx: %.2f kB (%d txs)\n' % (med_small_tx/1024, len(small_txs)))
+	print(' Med. big tx: %2f kB (%d txs)\n' % (med_big_tx/1024, len(big_txs)))
+	print(' Half block block limit: %.2f kB\n' % (blimit/1024/2) )
+	print(' Avg. of last 30 blocks: %.2f kB\n' % (avg_block_size/1024) )
+	print(' Block usage: %.2f %\n' % block_fill )
+	print(' Approx. tx speed per hour: %d TPH\n' % txs)
 
 	print(' Predicted block: %d big_txs + %d small_txs\n' % (int(bigs), int(smalls)))
 	print(' Average wait time: %d blocks ( %d hr: %d min )\n' % (wait_block, wait_hr, wait_min))
