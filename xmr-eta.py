@@ -92,7 +92,7 @@ if data_info['status'] and data_txs['status'] and data_pool['status'] == 'succes
 	smalls = 0
 	if med_big_tx == 0:
 		rest = sum(small_txs)
-		wait_block = int( rest / blimit/2 + 1)
+		wait_block = int( rest / (blimit/2) + 1)
 	
 	elif len(big_txs) == 1:
 		rest = blimit/2 - med_big_tx
@@ -104,12 +104,14 @@ if data_info['status'] and data_txs['status'] and data_pool['status'] == 'succes
 
 	wait_hr, wait_min = divmod((wait_block * 2), 60)
 
-	block_fill = format((avg_block_size/blimit)*100, '.2f')
+	block_fill = format((avg_block_size/(blimit/2))*100, '.2f')
 
 	if rest/med_small_tx > len(small_txs):
 		smalls = len(small_txs)
 	else:
 		smalls = int(rest/med_small_tx)
+
+	block_mb_day = avg_block_size * 720 / 1048576
 
 
 #	print(big_txs)
@@ -117,6 +119,7 @@ if data_info['status'] and data_txs['status'] and data_pool['status'] == 'succes
 	print(" Height: "+ str(height) + "\n")
 	print(" Last block hash:\n "+ str(lasthash) + "\n")
 	print(" Block size limit: %s kB\n" % (str(format(blimit/1024, '.2f') )))
+	print(" Predicted blockchain size per day: %s mB\n" % (str(format(block_mb_day, '.2f') )))
 	print(" Mempool txs: "+ str(pooltxs) + "\n")
 	print(" Mempool txs size: "+ str(format(poolsize/1024, '.2f')) + " kB\n")
 	print(" Med. Small tx: "+ str(format(med_small_tx/1024, '.2f')) + " kB\n")
