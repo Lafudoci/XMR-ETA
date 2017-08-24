@@ -1,4 +1,4 @@
-import json, requests, statistics 
+import json, requests, statistics, math, time
 
 from pprint import pprint
 
@@ -31,20 +31,36 @@ if data_pool['status'] == 'success':
 	poolsize=0
 	small_txs=[]
 	big_txs=[]
+	small_fees = []
+	big_fees = []
 	while n < data_pool['data']['txs_no']:
+		timestamp = data_pool['data']['txs'][num]['timestamp']
 		txs_size = data_pool['data']['txs'][num]['tx_size']
-		poolsize = txs_size + poolsize
+		fee = data_pool['data']['txs'][num]['tx_fee']/float(1e12)
+
+		age = time.strftime("%H:%M:%S", time.gmtime(int(time.time()) - timestamp))
+
 		if txs_size < 40960:
-			small_txs.append ( data_pool['data']['txs'][num]['tx_size'] )
+			small_txs.append( txs_size )
+			small_fees.append( [age, fee, txs_size])
 		else:
-			big_txs.append ( data_pool['data']['txs'][num]['tx_size'] )
+			big_txs.append( txs_size )
+			big_fees.append( [age, fee, txs_size])
+		
 		num = num + 1
 		n = n + 1
+
+	poolsize = sum(small_txs) + sum(big_txs)
+
 	med_small_tx = statistics.median(small_txs)
+
 	if len(big_txs) == 0:
 		med_big_tx = 0
 	else:
 		med_big_tx = statistics.median(big_txs)
+
+
+
 else:
 	print(' ERROR:'+ data_pool['error'])
 
@@ -69,7 +85,7 @@ if data_txs['status'] == 'success':
 		block_height = data_txs['data']['blocks'][num]['height']
 		block_txs = len(data_txs['data']['blocks'][num]['txs'])
 
-		print(' Height '+ str(block_height) + ': ' + str(block_size) + ' ( ' + str(block_txs) + ' txs )')
+		print(' Height %s: %.2f kB ( %d txs )' % (block_height, block_size/1024, block_txs))
 
 		txs = block_txs + txs
 		block_size_sum = block_size + block_size_sum
@@ -113,24 +129,24 @@ if data_info['status'] and data_txs['status'] and data_pool['status'] == 'succes
 
 	block_mb_day = avg_block_size * 720 / 1048576
 
-
-#	print(big_txs)
+	pprint(small_fees)
 	print('\n')
 	print(' Height: %d\n' % height )
 	print(' Last block hash:\n %s' % lasthash)
-	print(' Block size limit: %f kB\n' % (blimit/1024) )
+	print(' Block size limit: %.2f kB\n' % (blimit/1024) )
 	print(' Predicted blockchain size per day: %.2f mB\n' % block_mb_day )
 	print(' Mempool txs: %d\n' % pooltxs)
 	print(' Mempool txs size: %.2f kB\n' % (poolsize/1024) )
 	print(' Med. Small tx: %.2f kB (%d txs)\n' % (med_small_tx/1024, len(small_txs)))
-	print(' Med. big tx: %2f kB (%d txs)\n' % (med_big_tx/1024, len(big_txs)))
+	print(' Med. big tx: %.2f kB (%d txs)\n' % (med_big_tx/1024, len(big_txs)))
 	print(' Half block block limit: %.2f kB\n' % (blimit/1024/2) )
 	print(' Avg. of last 30 blocks: %.2f kB\n' % (avg_block_size/1024) )
-	print(' Block usage: %.2f %\n' % block_fill )
+	print(' Block usage: %.2f %%\n' % block_fill )
 	print(' Approx. tx speed per hour: %d TPH\n' % txs)
 
 	print(' Predicted block: %d big_txs + %d small_txs\n' % (int(bigs), int(smalls)))
 	print(' Average wait time: %d blocks ( %d hr: %d min )\n' % (wait_block, wait_hr, wait_min))
+	print(' Longest wait: %s (fee: %.4f, size: %.2f kB)\n' % (small_fees[-1][0], small_fees[-1][1], small_fees[-1][2]/1024))
 else:
 	print(' ERROR: Data source is unavailabe.')
 
