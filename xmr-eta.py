@@ -152,7 +152,9 @@ while True:
 		print(' Longest wait: %s (fee: %.4f, size: %.2f kB)\n' % (small_fees[-1][0], small_fees[-1][1], small_fees[-1][2]/1024))
 		
 		# update thingspeak
-		url_thingspeak = 'https://api.thingspeak.com/update?api_key=7BR555J40H6H0CZP'
+		thingspeak_key = open('thingspeak_key.txt', 'r')
+		url_thingspeak = 'https://api.thingspeak.com/update?api_key='+ thingspeak_key.readline()
+		thingspeak_key.close()
 		url_data = '&field1=%.2f&field2=%.2f&field3=%.2ff&field4=%.2f&field5=%d&field6=%d' % ((poolsize/1024), (blimit/1024), avg_block_size, block_fill, txs, (wait_block*2))
 		print('\n GET '+ url_thingspeak[8:] + url_data)
 		resp_thingspeak = requests.get(url=url_thingspeak+url_data)
