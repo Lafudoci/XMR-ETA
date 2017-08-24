@@ -119,14 +119,14 @@ if data_info['status'] and data_txs['status'] and data_pool['status'] == 'succes
 	print(" Block size limit: %s kB\n" % (str(format(blimit/1024, '.2f') )))
 	print(" Mempool txs: "+ str(pooltxs) + "\n")
 	print(" Mempool txs size: "+ str(format(poolsize/1024, '.2f')) + " kB\n")
-	print(" Med. Small tx: "+ str(format(med_small_tx/1024, '.2f')) + " kB\n")
-	print(" Med. big tx: "+ str(format(med_big_tx/1024, '.2f')) + " kB\n")
+	print(" Med. Small tx: %.2f kB (%d txs)\n" % (med_small_tx/1024, len(small_txs)))
+	print(" Med. big tx: %2f kB (%d txs)\n" % (med_big_tx/1024, len(big_txs)))
 	print(" Half block block limit: %s kB\n" % (str(format(blimit/1024/2, '.2f') )))
 	print(" Avg. of last 30 blocks: "+ str(format(avg_block_size/1024, '.2f')) + " kB\n")
 	print(' Block usage: ' + str(block_fill) + '%\n')
 	print(" Approx. tx speed per hour: "+ str(format(txs, '.0f')) + " TPH\n")
 
-	print(' Predicted block: %d big_txs + %d small_tx\n' % (int(bigs), int(smalls)))
+	print(' Predicted block: %d big_txs + %d small_txs\n' % (int(bigs), int(smalls)))
 	print(' Average wait time: %d blocks ( %d hr: %d min )\n' % (wait_block, wait_hr, wait_min))
 else:
 	print(' ERROR: Data source is unavailabe.')
