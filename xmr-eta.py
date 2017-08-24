@@ -150,9 +150,19 @@ while True:
 		print(' Predicted block: %d big_txs + %d small_txs\n' % (int(bigs), int(smalls)))
 		print(' Average wait time: %d blocks ( %d hr: %d min )\n' % (wait_block, wait_hr, wait_min))
 		print(' Longest wait: %s (fee: %.4f, size: %.2f kB)\n' % (small_fees[-1][0], small_fees[-1][1], small_fees[-1][2]/1024))
+		
+		# update thingspeak
+		url_thingspeak = 'https://api.thingspeak.com/update?api_key=7BR555J40H6H0CZP'
+		url_data = '&field1=%.2f&field2=%.2f&field3=%.2ff&field4=%.2f&field5=%d&field6=%d' % ((poolsize/1024), (blimit/1024), avg_block_size, block_fill, txs, (wait_block*2))
+		print('\n GET '+ url_thingspeak[8:] + url_data)
+		resp_thingspeak = requests.get(url=url_thingspeak+url_data)
+		print(resp_thingspeak)
+		print(resp_thingspeak.text)
+
+
 	else:
 		print(' ERROR: Data source is unavailabe.')
 
-	time.sleep(60)
+	time.sleep(600)
 
 input(' Finished!') 
