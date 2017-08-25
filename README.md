@@ -25,6 +25,7 @@ Height: 1384313
 
  Last block hash:
  77981c8b4c354dbb445ad1daeae400a5946fdf5926d17b493f5a741494f2fbaa
+ 
  Block size limit: 690.36 kB
 
  Predicted blockchain size per day: 249.35 mB
