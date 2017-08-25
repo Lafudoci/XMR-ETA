@@ -50,21 +50,21 @@ while True:
 		poolsize=0
 		small_txs=[]
 		big_txs=[]
-		small_fees = []
+		small_waits = []
 		big_fees = []
 		while n < data_pool['data']['txs_no']:
 			timestamp = data_pool['data']['txs'][num]['timestamp']
 			txs_size = data_pool['data']['txs'][num]['tx_size']
 			fee = data_pool['data']['txs'][num]['tx_fee']/float(1e12)
 
-			age = time.strftime("%H:%M:%S", time.gmtime(int(time.time()) - timestamp))
+			tx_age = int(time.time() - timestamp)
 
 			if txs_size < 40960:
 				small_txs.append( txs_size )
-				small_fees.append( [age, fee, txs_size])
+				small_waits.append( [tx_age, fee, txs_size])
 			else:
 				big_txs.append( txs_size )
-				big_fees.append( [age, fee, txs_size])
+				big_fees.append( [tx_age, fee, txs_size])
 			
 			num = num + 1
 			n = n + 1
@@ -130,35 +130,52 @@ while True:
 
 	# caculate and print information
 	if badget == False and ((data_info['status'] and data_txs['status'] and data_pool['status']) == 'success'):
-	# wait time caculation
-	#	wait_block = int(poolsize / avg_block_size)
+
+		block_mb_day = avg_block_size * 720 / 1048576
+		block_efficiency = avg_block_size/(blimit/2)*100
+		
+		# wait block caculation
 		bigs = 0
 		rest = 0
 		smalls = 0
+		# predict big txs
 		if med_big_tx == 0:
 			rest = sum(small_txs)
-			wait_block = int( rest / (blimit/2) + 1)
+			wait_block = int( rest / avg_block_size + 1)
 		
 		elif len(big_txs) == 1:
-			rest = blimit/2 - med_big_tx
+			rest = avg_block_size - med_big_tx
 			wait_block = int( sum(small_txs) / rest + 1)
 		
 		else:
-			bigs, rest = divmod(blimit/2, med_big_tx)
+			bigs, rest = divmod(avg_block_size, med_big_tx)
 			wait_block = int( sum(small_txs) / rest + 1)
 
-		wait_hr, wait_min = divmod((wait_block * 2), 60)
-
-		block_efficiency = avg_block_size/(blimit/2)*100
-
+		# predict small txs
 		if rest/med_small_tx > len(small_txs):
 			smalls = len(small_txs)
 		else:
-			smalls = int(rest/med_small_tx)
+			smalls = int(rest/med_small_tx)		
+		
+		# longest small txs wait
+		if len(small_waits) != 0:
+			longest_small = ' Longest wait: %s (fee: %.4f, size: %.2f kB)\n' % (time.strftime("%H:%M:%S",time.gmtime(small_waits[-1][0])), small_waits[-1][1], small_waits[-1][2]/1024)
+			# compensate with longest wait (experimental method)
+			wait_block_longest = int(small_waits[-1][0]/120)
+		else:
+			longest_small = ' No small tx is waiting'
 
-		block_mb_day = avg_block_size * 720 / 1048576
+		# compensate with TPH (experimental method)
+		wait_block_tph = int( len(small_txs)/(txs/60*2) +1)
 
-	#	pprint(small_fees)
+		wait_block = int(( wait_block + wait_block_tph)/2)
+		wait_block_sd = int(statistics.pstdev ([wait_block , wait_block_tph , wait_block_longest]))
+
+		# wait block to wait time caculation
+		wait_hr, wait_min = divmod((wait_block * 2), 60)
+
+
+	#	pprint(small_waits)
 		print('\n')
 		print(' Height: %d\n' % height )
 		print(' Last block hash:\n %s' % lasthash)
@@ -172,16 +189,16 @@ while True:
 		print(' Avg. of last 30 blocks: %.2f kB\n' % (avg_block_size/1024) )
 		print(' Block efficiency: %.2f %%\n' % block_efficiency )
 		print(' Approx. tx speed per hour: %d TPH\n' % txs)
-
+		print(' longest small tx: '+ longest_small)
 		print(' Predicted block: %d big_txs + %d small_txs\n' % (int(bigs), int(smalls)))
-		print(' Average wait time: %d blocks ( %d hr: %d min )\n' % (wait_block, wait_hr, wait_min))
-		print(' Longest wait: %s (fee: %.4f, size: %.2f kB)\n' % (small_fees[-1][0], small_fees[-1][1], small_fees[-1][2]/1024))
+		print(' Average wait time: %d +- %d blocks ( %d hr: %d min )\n' % (wait_block, wait_block_sd, wait_hr, wait_min))
+
 		
 		# update thingspeak
 		thingspeak_key = open('thingspeak_key.txt', 'r')
 		url_thingspeak = 'https://api.thingspeak.com/update?api_key='+ thingspeak_key.readline()
 		thingspeak_key.close()
-		url_data = '&field1=%.2f&field2=%.2f&field3=%.2ff&field4=%.2f&field5=%d&field6=%d' % ((poolsize/1024), (blimit/1024), (avg_block_size/1024), block_efficiency, txs, (wait_block*2))
+		url_data = '&field1=%.2f&field2=%.2f&field3=%.2f&field4=%.2f&field5=%d&field6=%d&field7=%d&field8=%d' % ((poolsize/1024), (blimit/1024), (avg_block_size/1024), block_efficiency, txs, (wait_block*2), len(small_txs), len(big_txs))
 		print('\n GET '+ url_thingspeak[8:] + url_data)
 		resp_thingspeak = requests.get(url=url_thingspeak+url_data)
 		print(resp_thingspeak)
@@ -191,6 +208,6 @@ while True:
 	else:
 		print(' ERROR: Data source is unavailabe.')
 
-	time.sleep(300)
+	time.sleep(240)
 
 input(' Finished!') 
