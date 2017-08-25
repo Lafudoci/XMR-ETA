@@ -5,14 +5,23 @@ from pprint import pprint
 
 while True:
 
+	badget = False
+
 	# get network data
 	url_info = 'http://xmrchain.net/api/networkinfo'
 	print('\n Connecting to: '+ url_info[7:])
-	resp_info = requests.get(url=url_info)
+	try:
+		resp_info = requests.get(url=url_info)
+	except requests.exceptions.Timeout as err:
+		print('error: '+ err)
+		badget = True
+
+	print(resp_info)
+
 	data_info = json.loads(resp_info.text)
 
 	if data_info['status'] == 'success':
-		print(' OK')
+		print(' JSON OK')
 		height = data_info['data']['height']
 		blimit = data_info['data']['block_size_limit']
 		pooltxs = data_info['data']['tx_pool_size']
@@ -24,11 +33,18 @@ while True:
 	# get last mempool data
 	url_pool = 'http://xmrchain.net/api/mempool'
 	print('\n Connecting to: '+ url_pool[7:])
-	resp_pool = requests.get(url=url_pool)
+	try:
+		resp_pool = requests.get(url=url_pool)
+	except requests.exceptions.Timeout as err:
+		print('error: '+ err)
+		badget = True
+
+	print(resp_pool)
+
 	data_pool = json.loads(resp_pool.text)
 
 	if data_pool['status'] == 'success':
-		print(' OK')
+		print(' JSON OK')
 		n=0
 		num=0
 		poolsize=0
@@ -55,7 +71,10 @@ while True:
 
 		poolsize = sum(small_txs) + sum(big_txs)
 
-		med_small_tx = statistics.median(small_txs)
+		if len(small_txs) == 1:
+			med_small_tx = small_txs[0]
+		else:
+			med_small_tx = statistics.median(small_txs)
 
 		if len(big_txs) == 0:
 			med_big_tx = 0
@@ -71,12 +90,19 @@ while True:
 	# get last 30 txs data
 	url_txs = 'http://xmrchain.net/api/transactions?limit=30'
 	print('\n Connecting to: '+ url_txs[7:])
-	resp_txs = requests.get(url=url_txs)
+	try:
+		resp_txs = requests.get(url=url_txs)
+	except requests.exceptions.Timeout as err:
+		print('error: '+ err)
+		badget = True
+
+	print(resp_txs)
+
 	data_txs = json.loads(resp_txs.text)
 
 
 	if data_txs['status'] == 'success':
-		print(' OK')
+		print(' JSON OK')
 		print('\n Last 30 blocks (Byte):')
 		print(' ======================')
 		n=0
@@ -103,7 +129,7 @@ while True:
 
 
 	# caculate and print information
-	if data_info['status'] and data_txs['status'] and data_pool['status'] == 'success':
+	if badget == False and ((data_info['status'] and data_txs['status'] and data_pool['status']) == 'success'):
 	# wait time caculation
 	#	wait_block = int(poolsize / avg_block_size)
 		bigs = 0
@@ -123,7 +149,7 @@ while True:
 
 		wait_hr, wait_min = divmod((wait_block * 2), 60)
 
-		block_fill = avg_block_size/(blimit/2)*100
+		block_efficiency = avg_block_size/(blimit/2)*100
 
 		if rest/med_small_tx > len(small_txs):
 			smalls = len(small_txs)
@@ -144,7 +170,7 @@ while True:
 		print(' Med. big tx: %.2f kB (%d txs)\n' % (med_big_tx/1024, len(big_txs)))
 		print(' Half block block limit: %.2f kB\n' % (blimit/1024/2) )
 		print(' Avg. of last 30 blocks: %.2f kB\n' % (avg_block_size/1024) )
-		print(' Block usage: %.2f %%\n' % block_fill )
+		print(' Block efficiency: %.2f %%\n' % block_efficiency )
 		print(' Approx. tx speed per hour: %d TPH\n' % txs)
 
 		print(' Predicted block: %d big_txs + %d small_txs\n' % (int(bigs), int(smalls)))
@@ -155,7 +181,7 @@ while True:
 		thingspeak_key = open('thingspeak_key.txt', 'r')
 		url_thingspeak = 'https://api.thingspeak.com/update?api_key='+ thingspeak_key.readline()
 		thingspeak_key.close()
-		url_data = '&field1=%.2f&field2=%.2f&field3=%.2ff&field4=%.2f&field5=%d&field6=%d' % ((poolsize/1024), (blimit/1024), avg_block_size, block_fill, txs, (wait_block*2))
+		url_data = '&field1=%.2f&field2=%.2f&field3=%.2ff&field4=%.2f&field5=%d&field6=%d' % ((poolsize/1024), (blimit/1024), (avg_block_size/1024), block_efficiency, txs, (wait_block*2))
 		print('\n GET '+ url_thingspeak[8:] + url_data)
 		resp_thingspeak = requests.get(url=url_thingspeak+url_data)
 		print(resp_thingspeak)
@@ -165,6 +191,6 @@ while True:
 	else:
 		print(' ERROR: Data source is unavailabe.')
 
-	time.sleep(600)
+	time.sleep(300)
 
 input(' Finished!') 
