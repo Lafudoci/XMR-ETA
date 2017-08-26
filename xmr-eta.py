@@ -71,13 +71,17 @@ while True:
 
 		poolsize = sum(small_txs) + sum(big_txs)
 
-		if len(small_txs) == 1:
+		if len(small_txs) == 0:
+			med_small_tx = 0
+		elif len(small_txs) == 1:
 			med_small_tx = small_txs[0]
 		else:
 			med_small_tx = statistics.median(small_txs)
 
 		if len(big_txs) == 0:
 			med_big_tx = 0
+		elif len(big_txs) == 1:
+			med_big_tx = big_txs[0]
 		else:
 			med_big_tx = statistics.median(big_txs)
 
@@ -139,20 +143,22 @@ while True:
 		rest = 0
 		smalls = 0
 		# predict big txs
-		if med_big_tx == 0:
+		if len(big_txs) == 0:
 			rest = sum(small_txs)
-			wait_block = int( rest / avg_block_size + 1)
+			wait_block_p = int( rest / avg_block_size + 1)
 		
 		elif len(big_txs) == 1:
 			rest = avg_block_size - med_big_tx
-			wait_block = int( sum(small_txs) / rest + 1)
+			wait_block_p = int( sum(small_txs) / rest + 1)
 		
 		else:
 			bigs, rest = divmod(avg_block_size, med_big_tx)
-			wait_block = int( sum(small_txs) / rest + 1)
+			wait_block_p = int( sum(small_txs) / rest + 1)
 
 		# predict small txs
-		if rest/med_small_tx > len(small_txs):
+		if len(small_txs) == 0:
+			smalls = 0
+		elif rest/med_small_tx > len(small_txs):
 			smalls = len(small_txs)
 		else:
 			smalls = int(rest/med_small_tx)		
@@ -168,8 +174,8 @@ while True:
 		# compensate with TPH (experimental method)
 		wait_block_tph = int( len(small_txs)/(txs/60*2) +1)
 
-		wait_block = int(( wait_block + wait_block_tph)/2)
-		wait_block_sd = int(statistics.pstdev ([wait_block , wait_block_tph , wait_block_longest]))
+		wait_block = int(( wait_block_p + wait_block_tph)/2)
+		wait_block_sd = int(statistics.pstdev ([wait_block_p , wait_block_tph , wait_block_longest]))
 
 		# wait block to wait time caculation
 		wait_hr, wait_min = divmod((wait_block * 2), 60)
