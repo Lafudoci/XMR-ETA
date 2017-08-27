@@ -145,14 +145,14 @@ while True:
 		# predict big txs
 		if len(big_txs) == 0:
 			rest = sum(small_txs)
-			wait_block_p = int( rest / avg_block_size + 1)
+			wait_block_p = int( rest / (blimit/2) + 1)
 		
 		elif len(big_txs) == 1:
-			rest = avg_block_size - med_big_tx
+			rest = (blimit/2) - med_big_tx
 			wait_block_p = int( sum(small_txs) / rest + 1)
 		
 		else:
-			bigs, rest = divmod(avg_block_size, med_big_tx)
+			bigs, rest = divmod((blimit/2), med_big_tx)
 			wait_block_p = int( sum(small_txs) / rest + 1)
 
 		# predict small txs
@@ -167,7 +167,7 @@ while True:
 		if len(small_waits) != 0:
 			longest_small = ' Longest wait: %s (fee: %.4f, size: %.2f kB)\n' % (time.strftime("%H:%M:%S",time.gmtime(small_waits[-1][0])), small_waits[-1][1], small_waits[-1][2]/1024)
 			# compensate with longest wait (experimental method)
-			wait_block_longest = int(small_waits[-1][0]/120)
+			wait_block_longest = int(small_waits[-1][0]/120 +1)
 		else:
 			longest_small = ' No small tx is waiting'
 
@@ -184,7 +184,7 @@ while True:
 	#	pprint(small_waits)
 		print('\n')
 		print(' Height: %d\n' % height )
-		print(' Last block hash:\n %s' % lasthash)
+		print(' Last block hash:\n %s\n' % lasthash)
 		print(' Block size limit: %.2f kB\n' % (blimit/1024) )
 		print(' Predicted blockchain size per day: %.2f mB\n' % block_mb_day )
 		print(' Mempool txs: %d\n' % pooltxs)
@@ -197,6 +197,7 @@ while True:
 		print(' Approx. tx speed per hour: %d TPH\n' % txs)
 		print(' longest small tx: '+ longest_small)
 		print(' Predicted block: %d big_txs + %d small_txs\n' % (int(bigs), int(smalls)))
+		print(' Predicted block time: predict: %d, tph: %d, longest: %d\n' % (wait_block_p, wait_block_tph, wait_block_longest))
 		print(' Average wait time: %d +- %d blocks ( %d hr: %d min )\n' % (wait_block, wait_block_sd, wait_hr, wait_min))
 
 		
