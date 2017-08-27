@@ -92,6 +92,7 @@ if data_txs['status'] == 'success':
 	print(' ======================')
 
 	med_30_size = statistics.median(block_sizes)
+	avg_30_size = statistics.mean(block_sizes)
 
 else:
 	print(' ERROR:'+ data_txs['error'])
@@ -100,8 +101,8 @@ else:
 # caculate and print information
 if ((data_info['status'] and data_txs['status'] and data_pool['status']) == 'success'):
 
-	block_mb_day = med_30_size * 720 / 1048576
-	block_usage = med_30_size/(dyn_size)*100
+	block_mb_day = dyn_size * 720 / 1048576
+	block_usage = avg_30_size/(dyn_size)*100
 	
 	# wait block caculation
 	bigs = 0
@@ -157,7 +158,7 @@ if ((data_info['status'] and data_txs['status'] and data_pool['status']) == 'suc
 	print(' Med. Small tx: %.2f kB (%d txs)\n' % (med_small_tx/1024, len(small_txs)))
 	print(' Med. big tx: %.2f kB (%d txs)\n' % (med_big_tx/1024, len(big_txs)))
 	print(' Dynamic block size: %.2f kB\n' % (dyn_size/1024) )
-	print(' Med. of last 30 blocks: %.2f kB\n' % (med_30_size/1024) )
+	print(' Avg. of last 30 blocks: %.2f kB\n' % (avg_30_size/1024) )
 	print(' Block usage: %.2f %%\n' % block_usage )
 	print(' Approx. tx speed per hour: %d TPH\n' % tph)
 	print(' longest small tx: '+ longest_small)
@@ -170,7 +171,7 @@ if ((data_info['status'] and data_txs['status'] and data_pool['status']) == 'suc
 	thingspeak_key = open('thingspeak_key.txt', 'r')
 	url_thingspeak = 'https://api.thingspeak.com/update?api_key='+ thingspeak_key.readline()
 	thingspeak_key.close()
-	url_data = '&field1=%.2f&field2=%.2f&field3=%.2f&field4=%.2f&field5=%d&field6=%d&field7=%d&field8=%d' % ((poolsize/1024), (dyn_size/1024), (med_30_size/1024), block_usage, tph, (wait_block*2), len(small_txs), len(big_txs))
+	url_data = '&field1=%.2f&field2=%.2f&field3=%.2f&field4=%.2f&field5=%d&field6=%d&field7=%d&field8=%d' % ((poolsize/1024), (dyn_size/1024), (avg_30_size/1024), block_usage, tph, (wait_block*2), len(small_txs), len(big_txs))
 	print('\n GET '+ url_thingspeak[8:] + url_data)
 	resp_thingspeak = requests.get(url=url_thingspeak+url_data)
 	print(resp_thingspeak)
