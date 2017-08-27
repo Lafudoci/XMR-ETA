@@ -16,7 +16,7 @@ data_txs = xmrchainapi.getjson('transactions?limit=30')
 if data_info['status'] == 'success':
 	print(' JSON OK')
 	height = data_info['data']['height']
-	blimit = data_info['data']['block_size_limit']
+	dyn_size = data_info['data']['block_size_limit']/2
 	pooltxs = data_info['data']['tx_pool_size']
 	lasthash = data_info['data']['top_block_hash']
 else:
@@ -102,7 +102,7 @@ else:
 if ((data_info['status'] and data_txs['status'] and data_pool['status']) == 'success'):
 
 	block_mb_day = avg_block_size * 720 / 1048576
-	block_efficiency = avg_block_size/(blimit/2)*100
+	block_efficiency = avg_block_size/(dyn_size)*100
 	
 	# wait block caculation
 	bigs = 0
@@ -111,14 +111,14 @@ if ((data_info['status'] and data_txs['status'] and data_pool['status']) == 'suc
 	# predict big txs
 	if len(big_txs) == 0:
 		rest = sum(small_txs)
-		wait_block_p = int( rest / (blimit/2) + 1)
+		wait_block_p = int( rest / (dyn_size) + 1)
 	
 	elif len(big_txs) == 1:
-		rest = (blimit/2) - med_big_tx
+		rest = (dyn_size) - med_big_tx
 		wait_block_p = int( sum(small_txs) / rest + 1)
 	
 	else:
-		bigs, rest = divmod((blimit/2), med_big_tx)
+		bigs, rest = divmod((dyn_size), med_big_tx)
 		wait_block_p = int( sum(small_txs) / rest + 1)
 
 	# predict small txs
@@ -151,13 +151,13 @@ if ((data_info['status'] and data_txs['status'] and data_pool['status']) == 'suc
 	print('\n')
 	print(' Height: %d\n' % height )
 	print(' Last block hash:\n %s\n' % lasthash)
-	print(' Block size limit: %.2f kB\n' % (blimit/1024) )
+	print(' Block size hard limit: %.2f kB\n' % (dyn_size*2/1024) )
 	print(' Predicted blockchain size per day: %.2f mB\n' % block_mb_day )
 	print(' Mempool txs: %d\n' % pooltxs)
 	print(' Mempool txs size: %.2f kB\n' % (poolsize/1024) )
 	print(' Med. Small tx: %.2f kB (%d txs)\n' % (med_small_tx/1024, len(small_txs)))
 	print(' Med. big tx: %.2f kB (%d txs)\n' % (med_big_tx/1024, len(big_txs)))
-	print(' Half block block limit: %.2f kB\n' % (blimit/1024/2) )
+	print(' Dynamic block size: %.2f kB\n' % (dyn_size/1024) )
 	print(' Avg. of last 30 blocks: %.2f kB\n' % (avg_block_size/1024) )
 	print(' Block efficiency: %.2f %%\n' % block_efficiency )
 	print(' Approx. tx speed per hour: %d TPH\n' % txs)
@@ -171,7 +171,7 @@ if ((data_info['status'] and data_txs['status'] and data_pool['status']) == 'suc
 	thingspeak_key = open('thingspeak_key.txt', 'r')
 	url_thingspeak = 'https://api.thingspeak.com/update?api_key='+ thingspeak_key.readline()
 	thingspeak_key.close()
-	url_data = '&field1=%.2f&field2=%.2f&field3=%.2f&field4=%.2f&field5=%d&field6=%d&field7=%d&field8=%d' % ((poolsize/1024), (blimit/1024), (avg_block_size/1024), block_efficiency, txs, (wait_block*2), len(small_txs), len(big_txs))
+	url_data = '&field1=%.2f&field2=%.2f&field3=%.2f&field4=%.2f&field5=%d&field6=%d&field7=%d&field8=%d' % ((poolsize/1024), (dyn_size/1024), (avg_block_size/1024), block_efficiency, txs, (wait_block*2), len(small_txs), len(big_txs))
 	print('\n GET '+ url_thingspeak[8:] + url_data)
 	resp_thingspeak = requests.get(url=url_thingspeak+url_data)
 	print(resp_thingspeak)
