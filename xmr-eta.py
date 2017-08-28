@@ -101,6 +101,8 @@ else:
 # caculate and print information
 if ((data_info['status'] and data_txs['status'] and data_pool['status']) == 'success'):
 
+	fee_lv = 0.012 * 4
+	dyn_size_exp = dyn_size * (1 + fee_lv)
 	block_mb_day = dyn_size * 720 / 1048576
 	block_usage = avg_30_size/(dyn_size)*100
 	
@@ -108,30 +110,39 @@ if ((data_info['status'] and data_txs['status'] and data_pool['status']) == 'suc
 	bigs = 0
 	rest = 0
 	smalls = 0
-	# predict big txs
+	# predict big txs in this block
 	if len(big_txs) == 0:
+		bigs = 0
 		rest = sum(small_txs)
-		wait_block_p = int( rest / (dyn_size) + 1)
+		wait_block_p = int( rest / (dyn_size_exp) + 1)
 	
 	elif len(big_txs) == 1:
-		rest = (dyn_size) - med_big_tx
+		bigs = 1
+		rest = (dyn_size_exp) - med_big_tx
 		wait_block_p = int( sum(small_txs) / rest + 1)
 	
 	else:
-		bigs, rest = divmod((dyn_size), med_big_tx)
+		bigs, rest = divmod((dyn_size_exp), med_big_tx)
+		if bigs > len(big_txs):
+			rest = rest + (bigs-len(big_txs))*med_big_tx
+			bigs = len(big_txs)
 		wait_block_p = int( sum(small_txs) / rest + 1)
 
-	# predict small txs
+	# predict small txs in this block
 	if len(small_txs) == 0:
 		smalls = 0
 	elif rest/med_small_tx > len(small_txs):
 		smalls = len(small_txs)
 	else:
-		smalls = int(rest/med_small_tx)		
+		smalls = int(rest/med_small_tx)
+
+	# predict the block size
+	this_block = bigs*med_big_tx + smalls*med_small_tx
+	this_block_efficiency = this_block/dyn_size*100
 	
 	# longest small txs wait
 	if len(small_waits) != 0:
-		longest_small = ' Longest wait: %s (fee: %.4f, size: %.2f kB)\n' % (time.strftime("%H:%M:%S",time.gmtime(small_waits[-1][0])), small_waits[-1][1], small_waits[-1][2]/1024)
+		longest_small = ' Longest small wait: %s (fee: %.4f, size: %.2f kB)\n' % (time.strftime("%H:%M:%S",time.gmtime(small_waits[-1][0])), small_waits[-1][1], small_waits[-1][2]/1024)
 		# compensate with longest wait (experimental method)
 		wait_block_longest = int(small_waits[-1][0]/120 +1)
 	else:
@@ -161,8 +172,8 @@ if ((data_info['status'] and data_txs['status'] and data_pool['status']) == 'suc
 	print(' Avg. of last 30 blocks: %.2f kB\n' % (avg_30_size/1024) )
 	print(' Block usage: %.2f %%\n' % block_usage )
 	print(' Approx. tx speed per hour: %d TPH\n' % tph)
-	print(' longest small tx: '+ longest_small)
-	print(' Predicted block: %d big_txs + %d small_txs\n' % (int(bigs), int(smalls)))
+	print( longest_small )
+	print(' Predicted block txs: %d big (%.fk) + %d small (%.fk) ( %.0f%% )\n' % (int(bigs), bigs*med_big_tx/1024, int(smalls), smalls*med_small_tx/1024, this_block_efficiency))
 	print(' Predicted block time: predict: %d, tph: %d, longest: %d\n' % (wait_block_p, wait_block_tph, wait_block_longest))
 	print(' Average wait time: %d +- %d blocks ( %d hr: %d min )\n' % (wait_block, wait_block_sd, wait_hr, wait_min))
 
