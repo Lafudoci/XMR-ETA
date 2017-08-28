@@ -142,30 +142,40 @@ while True:
 		bigs = 0
 		rest = 0
 		smalls = 0
-		# predict big txs
+		# predict big txs in this block
 		if len(big_txs) == 0:
+			bigs = 0
 			rest = sum(small_txs)
 			wait_block_p = int( rest / (blimit/2) + 1)
 		
 		elif len(big_txs) == 1:
+			bigs = 1
 			rest = (blimit/2) - med_big_tx
 			wait_block_p = int( sum(small_txs) / rest + 1)
 		
 		else:
 			bigs, rest = divmod((blimit/2), med_big_tx)
+			if bigs > len(big_txs):
+				rest = rest + (bigs-len(big_txs))*med_big_tx
+				bigs = len(big_txs)
+
 			wait_block_p = int( sum(small_txs) / rest + 1)
 
-		# predict small txs
+		# predict small txs in this block
 		if len(small_txs) == 0:
 			smalls = 0
 		elif rest/med_small_tx > len(small_txs):
 			smalls = len(small_txs)
 		else:
-			smalls = int(rest/med_small_tx)		
+			smalls = int(rest/med_small_tx)
+
+		# predict the block size
+		this_block = bigs*med_big_tx + smalls*med_small_tx
+		this_block_efficiency = this_block/(blimit/2)*100
 		
 		# longest small txs wait
 		if len(small_waits) != 0:
-			longest_small = ' Longest wait: %s (fee: %.4f, size: %.2f kB)\n' % (time.strftime("%H:%M:%S",time.gmtime(small_waits[-1][0])), small_waits[-1][1], small_waits[-1][2]/1024)
+			longest_small = ' Longest small wait: %s (fee: %.4f, size: %.2f kB)\n' % (time.strftime("%H:%M:%S",time.gmtime(small_waits[-1][0])), small_waits[-1][1], small_waits[-1][2]/1024)
 			# compensate with longest wait (experimental method)
 			wait_block_longest = int(small_waits[-1][0]/120 +1)
 		else:
@@ -185,18 +195,18 @@ while True:
 		print('\n')
 		print(' Height: %d\n' % height )
 		print(' Last block hash:\n %s\n' % lasthash)
-		print(' Block size limit: %.2f kB\n' % (blimit/1024) )
+		print(' Block size hard limit: %.2f kB\n' % (blimit/1024) )
 		print(' Predicted blockchain size per day: %.2f mB\n' % block_mb_day )
 		print(' Mempool txs: %d\n' % pooltxs)
 		print(' Mempool txs size: %.2f kB\n' % (poolsize/1024) )
 		print(' Med. Small tx: %.2f kB (%d txs)\n' % (med_small_tx/1024, len(small_txs)))
 		print(' Med. big tx: %.2f kB (%d txs)\n' % (med_big_tx/1024, len(big_txs)))
-		print(' Half block block limit: %.2f kB\n' % (blimit/1024/2) )
+		print(' Dynamic block limit: %.2f kB\n' % (blimit/1024/2) )
 		print(' Avg. of last 30 blocks: %.2f kB\n' % (avg_block_size/1024) )
 		print(' Block efficiency: %.2f %%\n' % block_efficiency )
 		print(' Approx. tx speed per hour: %d TPH\n' % txs)
-		print(' longest small tx: '+ longest_small)
-		print(' Predicted block: %d big_txs + %d small_txs\n' % (int(bigs), int(smalls)))
+		print(longest_small)
+		print(' Predicted block txs: %d big (%.fk) + %d small (%.fk) ( %.0f%% )\n' % (int(bigs), bigs*med_big_tx/1024, int(smalls), smalls*med_small_tx/1024, this_block_efficiency))
 		print(' Predicted block time: predict: %d, tph: %d, longest: %d\n' % (wait_block_p, wait_block_tph, wait_block_longest))
 		print(' Average wait time: %d +- %d blocks ( %d hr: %d min )\n' % (wait_block, wait_block_sd, wait_hr, wait_min))
 
