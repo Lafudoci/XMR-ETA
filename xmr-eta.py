@@ -4,28 +4,24 @@ from pprint import pprint
 
 import xmrchainapi
 
+check_period = 240
+
+while True:
 # get last networkinfo data
-data_info = xmrchainapi.getjson('networkinfo')
+	data_info = xmrchainapi.getjson('networkinfo')
 # get last mempool data
-data_pool = xmrchainapi.getjson('mempool')
+	data_pool = xmrchainapi.getjson('mempool')
 # get last 30 txs data
-data_txs = xmrchainapi.getjson('transactions?limit=30')
-	# retry every 20s if failed
+	data_txs = xmrchainapi.getjson('transactions?limit=30')
+
 
 # parse networkinfo data
-if data_info['status'] == 'success':
-	print(' JSON OK')
 	height = data_info['data']['height']
 	dyn_size = data_info['data']['block_size_limit']/2
 	pooltxs = data_info['data']['tx_pool_size']
 	lasthash = data_info['data']['top_block_hash']
-else:
-	print(' ERROR:'+ data_info['error'])
-
 
 # parse mempool data
-if data_pool['status'] == 'success':
-	print(' JSON OK')
 	n=0
 	num=0
 	poolsize=0
@@ -66,13 +62,7 @@ if data_pool['status'] == 'success':
 	else:
 		med_big_tx = statistics.median(big_txs)
 
-else:
-	print(' ERROR:'+ data_pool['error'])
-
-
 # parse last 30 blocks data
-if data_txs['status'] == 'success':
-	print(' JSON OK')
 	print('\n Last 30 blocks (Byte):')
 	print(' ======================')
 	n=0
@@ -94,23 +84,19 @@ if data_txs['status'] == 'success':
 	med_30_size = statistics.median(block_sizes)
 	avg_30_size = statistics.mean(block_sizes)
 
-else:
-	print(' ERROR:'+ data_txs['error'])
-
 
 # caculate and print information
-if ((data_info['status'] and data_txs['status'] and data_pool['status']) == 'success'):
 
 	fee_lv = 0.012 * 4
 	dyn_size_exp = dyn_size * (1 + fee_lv)
 	block_mb_day = dyn_size * 720 / 1048576
 	block_usage = avg_30_size/(dyn_size)*100
 	
-	# wait block caculation
+# wait block caculation
 	bigs = 0
 	rest = 0
 	smalls = 0
-	# predict big txs in this block
+# predict big txs in this block
 	if len(big_txs) == 0:
 		bigs = 0
 		rest = sum(small_txs)
@@ -128,7 +114,7 @@ if ((data_info['status'] and data_txs['status'] and data_pool['status']) == 'suc
 			bigs = len(big_txs)
 		wait_block_p = int( sum(small_txs) / rest + 1)
 
-	# predict small txs in this block
+# predict small txs in this block
 	if len(small_txs) == 0:
 		smalls = 0
 	elif rest/med_small_tx > len(small_txs):
@@ -136,29 +122,28 @@ if ((data_info['status'] and data_txs['status'] and data_pool['status']) == 'suc
 	else:
 		smalls = int(rest/med_small_tx)
 
-	# predict the block size
+# predict the block size
 	this_block = bigs*med_big_tx + smalls*med_small_tx
 	this_block_efficiency = this_block/dyn_size*100
 	
-	# longest small txs wait
+# longest small txs wait
 	if len(small_waits) != 0:
 		longest_small = ' Longest small wait: %s (fee: %.4f, size: %.2f kB)\n' % (time.strftime("%H:%M:%S",time.gmtime(small_waits[-1][0])), small_waits[-1][1], small_waits[-1][2]/1024)
-		# compensate with longest wait (experimental method)
+# compensate with longest wait (experimental method)
 		wait_block_longest = int(small_waits[-1][0]/120 +1)
 	else:
 		longest_small = ' No small tx is waiting'
 
-	# compensate with TPH (experimental method)
+# compensate with TPH (experimental method)
 	wait_block_tph = int( len(small_txs)/(tph/60*2) +1)
 
 	wait_block = int(( wait_block_p + wait_block_tph)/2)
 	wait_block_sd = int(statistics.pstdev ([wait_block_p , wait_block_tph , wait_block_longest]))
 
-	# wait block to wait time caculation
+# wait block to wait time caculation
 	wait_hr, wait_min = divmod((wait_block * 2), 60)
 
 
-#	pprint(small_waits)
 	print('\n')
 	print(' Height: %d\n' % height )
 	print(' Last block hash:\n %s\n' % lasthash)
@@ -178,17 +163,23 @@ if ((data_info['status'] and data_txs['status'] and data_pool['status']) == 'suc
 	print(' Average wait time: %d +- %d blocks ( %d hr: %d min )\n' % (wait_block, wait_block_sd, wait_hr, wait_min))
 
 	
-	# update thingspeak
+# update thingspeak
 	thingspeak_key = open('thingspeak_key.txt', 'r')
 	url_thingspeak = 'https://api.thingspeak.com/update?api_key='+ thingspeak_key.readline()
 	thingspeak_key.close()
 	url_data = '&field1=%.2f&field2=%.2f&field3=%.2f&field4=%.2f&field5=%d&field6=%d&field7=%d&field8=%d' % ((poolsize/1024), (dyn_size/1024), (avg_30_size/1024), block_usage, tph, (wait_block*2), len(small_txs), len(big_txs))
 	print('\n GET '+ url_thingspeak[8:] + url_data)
-	resp_thingspeak = requests.get(url=url_thingspeak+url_data)
-	print(resp_thingspeak)
-	print(resp_thingspeak.text)
+	try:
+		resp_thingspeak = requests.get(url=url_thingspeak+url_data)
+	except requests.exceptions.RequestException as err:
+		print(' ERROR: '+ str(err))
+	
+	print(' HTTP:'+ str(resp_thingspeak))
+	print(' Entry:'+ str(resp_thingspeak.text))
+		
 
-else:
-	print(' ERROR: Data source is unavailabe.')
-
-input(' Finished!') 
+	last_check = time.time()
+	
+	print(' Wait for next update in %ds ...'% check_period)
+	while check_period > (time.time()-last_check):
+		a = 1
