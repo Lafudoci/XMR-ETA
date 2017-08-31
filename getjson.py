@@ -5,7 +5,7 @@ def xmrchain(arg):
 
 	# get network data
 	url = ('http://xmrchain.net/api/%s' % (arg))
-	print('\n Connecting to: '+ url[8:])
+	print('\n Connecting to: '+ url[7:])
 
 	while True: 
 		try:
@@ -46,7 +46,7 @@ def moneroblocks(arg):
 
 	# get network data
 	url = ('http://moneroblocks.info/api/%s' % (arg))
-	print('\n Connecting to: '+ url[8:])
+	print('\n Connecting to: '+ url[7:])
 
 	while True: 
 		try:
