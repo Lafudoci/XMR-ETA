@@ -1,18 +1,18 @@
-import requests, statistics, math, time
-
+import requests, getjson, statistics, math, time
 from pprint import pprint
-
-import xmrchainapi
+from operator import itemgetter, attrgetter  
 
 check_period = 240
 
 while True:
 # get last networkinfo data
-	data_info = xmrchainapi.getjson('networkinfo')
+	data_info = getjson.xmrchain('networkinfo')
 # get last mempool data
-	data_pool = xmrchainapi.getjson('mempool')
+	data_pool = getjson.xmrchain('mempool')
 # get last 30 txs data
-	data_txs = xmrchainapi.getjson('transactions?limit=30')
+	data_txs = getjson.xmrchain('transactions?limit=30')
+# get emission data
+	data_emission = getjson.moneroblocks('get_stats')
 
 
 # parse networkinfo data
@@ -27,8 +27,9 @@ while True:
 	poolsize=0
 	small_txs=[]
 	big_txs=[]
-	small_waits = []
-	big_fees = []
+	waits=[]
+	small_waits=[]
+	big_waits=[]
 	while n < data_pool['data']['txs_no']:
 		timestamp = data_pool['data']['txs'][num]['timestamp']
 		txs_size = data_pool['data']['txs'][num]['tx_size']
@@ -36,12 +37,14 @@ while True:
 
 		tx_age = int(time.time() - timestamp)
 
+		waits.append( [tx_age, fee, txs_size, fee/txs_size])
+
 		if txs_size < 40960:
 			small_txs.append( txs_size )
 			small_waits.append( [tx_age, fee, txs_size])
 		else:
 			big_txs.append( txs_size )
-			big_fees.append( [tx_age, fee, txs_size])
+			big_waits.append( [tx_age, fee, txs_size])
 		
 		num = num + 1
 		n = n + 1
@@ -63,8 +66,8 @@ while True:
 		med_big_tx = statistics.median(big_txs)
 
 # parse last 30 blocks data
-	print('\n Last 30 blocks (Byte):')
-	print(' ======================')
+	# print('\n Last 30 blocks (Byte):')
+	# print(' ======================')
 	n=0
 	num=0
 	block_sizes=[]
@@ -73,13 +76,13 @@ while True:
 		block_size = data_txs['data']['blocks'][num]['size']
 		block_height = data_txs['data']['blocks'][num]['height']
 		block_txs = len(data_txs['data']['blocks'][num]['txs'])
-		print(' Height %s: %.2f kB ( %d txs )' % (block_height, block_size/1024, block_txs))
+		#print(' Height %s: %.2f kB ( %d txs )' % (block_height, block_size/1024, block_txs))
 
 		block_sizes.append(block_size)
 		tph = block_txs + tph
 		num = num + 1
 		n = n + 1
-	print(' ======================')
+	# print(' ======================')
 
 	med_30_size = statistics.median(block_sizes)
 	avg_30_size = statistics.mean(block_sizes)
@@ -87,10 +90,97 @@ while True:
 
 # caculate and print information
 
+# base reward caculation
+	M = 2**64 - 1
+	A = int(data_emission['total_emission'])
+	base_reward = max( 0.6, math.floor( (M - A) / 2**19 )) / 10**12
+
+# dynamic size expasion base on fee
 	fee_lv = 0.012 * 4
 	dyn_size_exp = dyn_size * (1 + fee_lv)
 	block_mb_day = dyn_size * 720 / 1048576
 	block_usage = avg_30_size/(dyn_size)*100
+
+# sort mempool txs by fee / size
+	waits.sort(key=itemgetter(3,0), reverse=True)
+	print(' Waits in mempool:')
+	pprint (waits)
+
+	block_fee = 0
+	fill=0
+	n=0
+	num=0
+	post_fill=[]
+	block_finish = True
+	while n < len(waits):
+
+		if fill + waits[num][2] <= dyn_size:
+			block_fee = block_fee + waits[num][1]
+			fill = fill + waits[num][2]
+
+		else:
+			block_finish = False
+			fill_exp = 0
+			fill_exp = (fill + waits[num][2])
+			penalty = ( fill_exp / dyn_size - 1)**2
+			post_fill.append([waits[num][1], waits[num][2], waits[num][1]-penalty])
+
+		num = num + 1
+		n = n + 1
+
+	if block_finish == False:
+		post_fill.sort(key=itemgetter(2), reverse=True)
+		print('post fill:')
+		pprint(post_fill)
+		
+		if post_fill[0][2]>0:
+			block_fee = block_fee + post_fill[0][0]
+			fill = fill + post_fill[0][1]
+			post_fill.remove(post_fill[0])
+
+			if len(post_fill)>0:
+				while True:
+					post_round = 2
+					n=0
+					num=0
+					while n < len(post_fill):
+						penalty = ( (fill+post_fill[num][1]) / dyn_size - 1)**2
+						post_fill = [post_fill[num][0], post_fill[num][1], post_fill[num][0]-penalty]
+						num = num + 1
+						n = n + 1
+					
+					post_fill.sort(key=itemgetter(2), reverse=True)
+					print('post%d fill:'%post_round)
+					pprint(post_fill)
+
+					if post_fill[0][2]>0:
+						block_fee = block_fee + post_fill[0][0]
+						fill = fill + post_fill[0][1]
+						post_fill.remove(post_fill[0])
+					else:
+						break
+	else:
+		print('\n Block is finished!')
+			
+			# n=0
+			# num=0
+			# post3_fill=[]
+			# while n < len(post2_fill):
+			# 	penalty = ( (fill+post2_fill[num][1]) / dyn_size - 1)**2
+			# 	post3_fill.append([post2_fill[num][0], post2_fill[num][1], post2_fill[num][0]-penalty])
+			# 	num = num + 1
+			# 	n = n + 1
+			
+			# if len(post3_fill) != 0:
+			# 	post3_fill.sort(key=itemgetter(2), reverse=True)
+			# 	print('post3 fill:')
+			# 	pprint(post3_fill)
+
+			# 	if post3_fill[0][2]>0:
+			# 		block_fee = block_fee + post3_fill[0][0]
+			# 		fill = fill + post3_fill[0][1]
+			# 		post3_fill.remove(post3_fill[0])
+
 	
 # wait block caculation
 	bigs = 0
@@ -124,7 +214,7 @@ while True:
 
 # predict the block size
 	this_block = bigs*med_big_tx + smalls*med_small_tx
-	this_block_efficiency = this_block/dyn_size*100
+	this_block_load = this_block/dyn_size*100
 	
 # longest small txs wait
 	if len(small_waits) != 0:
@@ -147,6 +237,7 @@ while True:
 	print('\n')
 	print(' Height: %d\n' % height )
 	print(' Last block hash:\n %s\n' % lasthash)
+	print(' Base block reward: %.2f XMR\n' % base_reward)
 	print(' Block size hard limit: %.2f kB\n' % (dyn_size*2/1024) )
 	print(' Predicted blockchain size per day: %.2f mB\n' % block_mb_day )
 	print(' Mempool txs: %d\n' % pooltxs)
@@ -155,31 +246,35 @@ while True:
 	print(' Med. big tx: %.2f kB (%d txs)\n' % (med_big_tx/1024, len(big_txs)))
 	print(' Dynamic block size: %.2f kB\n' % (dyn_size/1024) )
 	print(' Avg. of last 30 blocks: %.2f kB\n' % (avg_30_size/1024) )
-	print(' Block usage: %.2f %%\n' % block_usage )
+	print(' Block load: %.2f %%\n' % block_usage )
 	print(' Approx. tx speed per hour: %d TPH\n' % tph)
 	print( longest_small )
-	print(' Predicted block txs: %d big (%.fk) + %d small (%.fk) ( %.0f%% )\n' % (int(bigs), bigs*med_big_tx/1024, int(smalls), smalls*med_small_tx/1024, this_block_efficiency))
+	print(' Predicted block txs: %d big (%.fk) + %d small (%.fk) ( %.0f%% )\n' % (int(bigs), bigs*med_big_tx/1024, int(smalls), smalls*med_small_tx/1024, this_block_load))
 	print(' Predicted block time: predict: %d, tph: %d, longest: %d\n' % (wait_block_p, wait_block_tph, wait_block_longest))
 	print(' Average wait time: %d +- %d blocks ( %d hr: %d min )\n' % (wait_block, wait_block_sd, wait_hr, wait_min))
 
-	
-# update thingspeak
-	thingspeak_key = open('thingspeak_key.txt', 'r')
-	url_thingspeak = 'https://api.thingspeak.com/update?api_key='+ thingspeak_key.readline()
-	thingspeak_key.close()
-	url_data = '&field1=%.2f&field2=%.2f&field3=%.2f&field4=%.2f&field5=%d&field6=%d&field7=%d&field8=%d' % ((poolsize/1024), (dyn_size/1024), (avg_30_size/1024), block_usage, tph, (wait_block*2), len(small_txs), len(big_txs))
-	print('\n GET '+ url_thingspeak[8:] + url_data)
-	try:
-		resp_thingspeak = requests.get(url=url_thingspeak+url_data)
-	except requests.exceptions.RequestException as err:
-		print(' ERROR: '+ str(err))
-	
-	print(' HTTP:'+ str(resp_thingspeak))
-	print(' Entry:'+ str(resp_thingspeak.text))
-		
+	print('\n Height: %d prediction:\n' % height )
+	print (' Method1: %.2f kb, fee:     xmr, load: %.2f%%\n' % (this_block/1024, this_block_load))
+	print (' Method2: %.2f kb, fee: %.2f xmr, load: %.2f%%\n' % (fill/1024, block_fee, fill/dyn_size*100))
 
-	last_check = time.time()
+# update thingspeak
+	# thingspeak_key = open('thingspeak_key.txt', 'r')
+	# url_thingspeak = 'https://api.thingspeak.com/update?api_key='+ thingspeak_key.readline()
+	# thingspeak_key.close()
+	# url_data = '&field1=%.2f&field2=%.2f&field3=%.2f&field4=%.2f&field5=%d&field6=%d&field7=%d&field8=%d' % ((poolsize/1024), (dyn_size/1024), (avg_30_size/1024), block_usage, tph, (wait_block*2), len(small_txs), len(big_txs))
+	# print('\n GET '+ url_thingspeak[8:] + url_data)
+	# try:
+	# 	resp_thingspeak = requests.get(url=url_thingspeak+url_data)
+	# except requests.exceptions.RequestException as err:
+	# 	print(' ERROR: '+ str(err))
 	
-	print(' Wait for next update in %ds ...'% check_period)
-	while check_period > (time.time()-last_check):
-		a = 1
+	# print('\n HTTP:'+ str(resp_thingspeak))
+	# print(' Entry:'+ str(resp_thingspeak.text))
+		
+# update loop timer
+	last_check = time.time()
+	print('\n Wait for next update in %ds ...'% check_period)
+	while True:
+		time.sleep(1)
+		if (time.time()-last_check) > check_period:
+			break
