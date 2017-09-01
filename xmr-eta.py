@@ -10,7 +10,7 @@ while True:
 # get last mempool data
 	data_pool = getjson.xmrchain('mempool')
 # get last 30 txs data
-	data_txs = getjson.xmrchain('transactions?limit=30')
+#	data_txs = getjson.xmrchain('transactions?limit=30')
 # get emission data
 	data_emission = getjson.moneroblocks('get_stats')
 
@@ -30,15 +30,26 @@ while True:
 	waits=[]
 	small_waits=[]
 	big_waits=[]
+	
+	block_predict = open(str(height)+str('-%s'% time.strftime("%H%M%S",time.gmtime(time.time())))+'.txt', 'w')
+	#block_predict.write('Time: %s\n'% time.strftime("%H%M%S",time.gmtime(time.time())))
+	block_predict.write('mempool:\n')
+
 	while n < data_pool['data']['txs_no']:
 		timestamp = data_pool['data']['txs'][num]['timestamp']
 		txs_size = data_pool['data']['txs'][num]['tx_size']
 		fee = data_pool['data']['txs'][num]['tx_fee']/float(1e12)
+		tx_hash = data_pool['data']['txs'][num]['tx_hash']
 
 		tx_age = int(time.time() - timestamp)
 
-		waits.append( (tx_age, fee, txs_size, fee/txs_size))
+		waits.append( (tx_age, fee, txs_size, fee/txs_size, tx_hash))
 		
+
+		block_predict.write(str((tx_age, fee, txs_size, fee/txs_size, tx_hash))+'\n')
+		
+
+
 		poolsize = poolsize + txs_size
 
 		num = num + 1
@@ -50,24 +61,24 @@ while True:
 # parse last 30 blocks data
 	# print('\n Last 30 blocks (Byte):')
 	# print(' ======================')
-	n=0
-	num=0
-	block_sizes=[]
-	tph=0
-	while n<30:
-		block_size = data_txs['data']['blocks'][num]['size']
-		block_height = data_txs['data']['blocks'][num]['height']
-		block_txs = len(data_txs['data']['blocks'][num]['txs'])
-		#print(' Height %s: %.2f kB ( %d txs )' % (block_height, block_size/1024, block_txs))
+	# n=0
+	# num=0
+	# block_sizes=[]
+	# tph=0
+	# while n<30:
+	# 	block_size = data_txs['data']['blocks'][num]['size']
+	# 	block_height = data_txs['data']['blocks'][num]['height']
+	# 	block_txs = len(data_txs['data']['blocks'][num]['txs'])
+	# 	#print(' Height %s: %.2f kB ( %d txs )' % (block_height, block_size/1024, block_txs))
 
-		block_sizes.append(block_size)
-		tph = block_txs + tph
-		num = num + 1
-		n = n + 1
-	# print(' ======================')
+	# 	block_sizes.append(block_size)
+	# 	tph = block_txs + tph
+	# 	num = num + 1
+	# 	n = n + 1
+	# # print(' ======================')
 
-	med_30_size = statistics.median(block_sizes)
-	avg_30_size = statistics.mean(block_sizes)
+	# med_30_size = statistics.median(block_sizes)
+	# avg_30_size = statistics.mean(block_sizes)
 
 
 # caculate and print information
@@ -95,12 +106,17 @@ while True:
 	post_fill=[]
 	first_fill=[]
 	block_finish = True
+	block_predict.write('\nFirst fill:\n')
 	while n < len(waits):
 
 		if fill + waits[num][2] <= dyn_size:
 			block_fee = block_fee + waits[num][1]
 			fill = fill + waits[num][2]
-			first_fill.append((fill, block_fee))
+			first_fill.append((fill, block_fee, waits[num][4]))
+
+			
+			block_predict.write(str((fill, block_fee, waits[num][4]))+'\n')
+
 		else:
 			block_finish = False	
 			
@@ -108,7 +124,9 @@ while True:
 	
 			penalty = ( fill_exp / dyn_size - 1)**2
 
-			post_fill.append((waits[num][1], waits[num][2], waits[num][1] - penalty))
+			
+
+			post_fill.append((waits[num][1], waits[num][2], waits[num][1] - penalty, waits[num][4]))
 
 		num = num + 1
 		n = n + 1
@@ -132,13 +150,17 @@ while True:
 		fill_gain = []
 		n=0
 		num=0
+		block_predict.write('\nfill_gain:\n')
 		while n < len(post_fill):
 
 			fee_add = fee_add + post_fill[num][0]
 			fill_add = fill_add + post_fill[num][1]
 			penalty_add = ( (fill + fill_add) / dyn_size - 1)**2
 
-			fill_gain.append(((fill+fill_add), (fee_add - penalty_add)))
+			fill_gain.append(((fill+fill_add), (fee_add - penalty_add), post_fill[num][3]))
+
+			
+			block_predict.write(str(((fill+fill_add), (fee_add - penalty_add), post_fill[num][3]))+'\n')
 			num = num + 1
 			n = n + 1
 
@@ -237,7 +259,8 @@ while True:
 	# print(' Predicted block txs: %d big (%.fk) + %d small (%.fk) ( %.0f%% )\n' % (int(bigs), bigs*med_big_tx/1024, int(smalls), smalls*med_small_tx/1024, this_block_load))
 	# print(' Predicted block time: predict: %d, tph: %d, longest: %d\n' % (wait_block_p, wait_block_tph, wait_block_longest))
 	# print(' Average wait time: %d +- %d blocks ( %d hr: %d min )\n' % (wait_block, wait_block_sd, wait_hr, wait_min))
-
+	print(' Time: %.f' % time.time())
+	print(' Time: %s'% time.strftime("%H:%M:%S",time.gmtime(time.time())))
 	print('\n Height %d prediction:\n' % height )
 	print (' Method2: %.2f kb, fee: %.4f xmr, load: %.2f%%\n' % (fill/1024, block_fee, fill/dyn_size*100))
 
@@ -254,7 +277,11 @@ while True:
 	
 	# print('\n HTTP:'+ str(resp_thingspeak))
 	# print(' Entry:'+ str(resp_thingspeak.text))
-		
+	
+
+	block_predict.write('\nMethod2: %.2f kb, fee: %.4f xmr, load: %.2f%%\n' % (fill/1024, block_fee, fill/dyn_size*100)+'\n')
+	block_predict.close()
+
 # update loop timer
 	last_check = time.time()
 	print('\n Wait for next update in %ds ...'% check_period)
