@@ -17,7 +17,7 @@ while True:
 
 # parse networkinfo data
 	height = data_info['data']['height']
-	dyn_size = data_info['data']['block_size_limit']/2
+	dyn_size = data_info['data']['block_size_limit']/1000*1024/2
 	pooltxs = data_info['data']['tx_pool_size']
 	lasthash = data_info['data']['top_block_hash']
 

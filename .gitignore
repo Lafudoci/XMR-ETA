@@ -1,3 +1,4 @@
 thingspeak_key.txt
 *.pyc
 *.zip
+*.txt
