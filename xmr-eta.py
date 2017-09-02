@@ -25,12 +25,8 @@ while True:
 	n=0
 	num=0
 	poolsize=0
-	small_txs=[]
-	big_txs=[]
 	waits=[]
-	small_waits=[]
-	big_waits=[]
-	
+
 	block_predict = open(str(height)+str('-%s'% time.strftime("%H%M%S",time.gmtime(time.time())))+'.txt', 'w')
 	#block_predict.write('Time: %s\n'% time.strftime("%H%M%S",time.gmtime(time.time())))
 	block_predict.write('mempool:\n')
@@ -54,31 +50,6 @@ while True:
 
 		num = num + 1
 		n = n + 1
-
-	poolsize = sum(small_txs) + sum(big_txs)
-
-
-# parse last 30 blocks data
-	# print('\n Last 30 blocks (Byte):')
-	# print(' ======================')
-	# n=0
-	# num=0
-	# block_sizes=[]
-	# tph=0
-	# while n<30:
-	# 	block_size = data_txs['data']['blocks'][num]['size']
-	# 	block_height = data_txs['data']['blocks'][num]['height']
-	# 	block_txs = len(data_txs['data']['blocks'][num]['txs'])
-	# 	#print(' Height %s: %.2f kB ( %d txs )' % (block_height, block_size/1024, block_txs))
-
-	# 	block_sizes.append(block_size)
-	# 	tph = block_txs + tph
-	# 	num = num + 1
-	# 	n = n + 1
-	# # print(' ======================')
-
-	# med_30_size = statistics.median(block_sizes)
-	# avg_30_size = statistics.mean(block_sizes)
 
 
 # caculate and print information
@@ -188,54 +159,7 @@ while True:
 	else:
 		print('\n Block is not full yet!')
 			
-	
-# wait block caculation
-	# bigs = 0
-	# rest = 0
-	# smalls = 0
-# predict big txs in this block
-# 	if len(big_txs) == 0:
-# 		bigs = 0
-# 		rest = sum(small_txs)
-# 		wait_block_p = int( rest / (dyn_size_exp) + 1)
-	
-# 	elif len(big_txs) == 1:
-# 		bigs = 1
-# 		rest = (dyn_size_exp) - med_big_tx
-# 		wait_block_p = int( sum(small_txs) / rest + 1)
-	
-# 	else:
-# 		bigs, rest = divmod((dyn_size_exp), med_big_tx)
-# 		if bigs > len(big_txs):
-# 			rest = rest + (bigs-len(big_txs))*med_big_tx
-# 			bigs = len(big_txs)
-# 		wait_block_p = int( sum(small_txs) / rest + 1)
 
-# # predict small txs in this block
-# 	if len(small_txs) == 0:
-# 		smalls = 0
-# 	elif rest/med_small_tx > len(small_txs):
-# 		smalls = len(small_txs)
-# 	else:
-# 		smalls = int(rest/med_small_tx)
-
-# # predict the block size
-# 	this_block = bigs*med_big_tx + smalls*med_small_tx
-# 	this_block_load = this_block/dyn_size*100
-	
-# # longest small txs wait
-# 	if len(small_waits) != 0:
-# 		longest_small = ' Longest small wait: %s (fee: %.4f, size: %.2f kB)\n' % (time.strftime("%H:%M:%S",time.gmtime(small_waits[-1][0])), small_waits[-1][1], small_waits[-1][2]/1024)
-# # compensate with longest wait (experimental method)
-# 		wait_block_longest = int(small_waits[-1][0]/120 +1)
-# 	else:
-# 		longest_small = ' No small tx is waiting'
-
-# # compensate with TPH (experimental method)
-# 	wait_block_tph = int( len(small_txs)/(tph/60*2) +1)
-
-# 	wait_block = int(( wait_block_p + wait_block_tph)/2)
-# 	wait_block_sd = int(statistics.pstdev ([wait_block_p , wait_block_tph , wait_block_longest]))
 
 # wait block to wait time caculation
 	#wait_hr, wait_min = divmod((wait_block * 2), 60)
@@ -243,26 +167,15 @@ while True:
 
 	print('\n')
 	print(' Height: %d\n' % height )
-	# print(' Last block hash:\n %s\n' % lasthash)
-	# print(' Base block reward: %.2f XMR\n' % base_reward)
-	# print(' Block size hard limit: %.2f kB\n' % (dyn_size*2/1024) )
-	# print(' Predicted blockchain size per day: %.2f mB\n' % block_mb_day )
+
 	print(' Mempool txs: %d\n' % pooltxs)
-	# print(' Mempool txs size: %.2f kB\n' % (poolsize/1024) )
-	# print(' Med. Small tx: %.2f kB (%d txs)\n' % (med_small_tx/1024, len(small_txs)))
-	# print(' Med. big tx: %.2f kB (%d txs)\n' % (med_big_tx/1024, len(big_txs)))
+
 	print(' Dynamic block size: %.2f kB\n' % (dyn_size/1024) )
-	# print(' Avg. of last 30 blocks: %.2f kB\n' % (avg_30_size/1024) )
-	# print(' Block load: %.2f %%\n' % block_usage )
-	# print(' Approx. tx speed per hour: %d TPH\n' % tph)
-	# print( longest_small )
-	# print(' Predicted block txs: %d big (%.fk) + %d small (%.fk) ( %.0f%% )\n' % (int(bigs), bigs*med_big_tx/1024, int(smalls), smalls*med_small_tx/1024, this_block_load))
-	# print(' Predicted block time: predict: %d, tph: %d, longest: %d\n' % (wait_block_p, wait_block_tph, wait_block_longest))
-	# print(' Average wait time: %d +- %d blocks ( %d hr: %d min )\n' % (wait_block, wait_block_sd, wait_hr, wait_min))
+
 	print(' Time: %.f' % time.time())
 	print(' Time: %s'% time.strftime("%H:%M:%S",time.gmtime(time.time())))
 	print('\n Height %d prediction:\n' % height )
-	print (' Method2: %.2f kb, fee: %.4f xmr, load: %.2f%%\n' % (fill/1024, block_fee, fill/dyn_size*100))
+	print (' Size %.2f kb, fee: %.4f xmr, load: %.2f%%\n' % (fill/1024, block_fee, fill/dyn_size*100))
 
 # update thingspeak
 	# thingspeak_key = open('thingspeak_key.txt', 'r')
@@ -279,7 +192,7 @@ while True:
 	# print(' Entry:'+ str(resp_thingspeak.text))
 	
 
-	block_predict.write('\nMethod2: %.2f kb, fee: %.4f xmr, load: %.2f%%\n' % (fill/1024, block_fee, fill/dyn_size*100)+'\n')
+	block_predict.write('\nSize: %.2f kb, fee: %.4f xmr, load: %.2f%%\n' % (fill/1024, block_fee, fill/dyn_size*100)+'\n')
 	block_predict.close()
 
 # update loop timer
