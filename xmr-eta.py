@@ -80,14 +80,15 @@ while True:
 	block_predict.write('\nFirst fill:\n')
 	while n < len(waits):
 
+# fill the block by fee/size order calls "first fill" list and sum size and fee
 		if fill + waits[num][2] <= dyn_size:
 			block_fee = block_fee + waits[num][1]
 			fill = fill + waits[num][2]
 			first_fill.append((fill, block_fee, waits[num][4]))
 
-			
 			block_predict.write(str((fill, block_fee, waits[num][4]))+'\n')
 
+# if fill meets the dynamic size then build a "post-fill" list
 		else:
 			block_finish = False	
 			
@@ -109,7 +110,7 @@ while True:
 
 	if block_finish == False:
 		
-
+# sort post-fill list order in ( fee-penalty )
 		post_fill.sort(key=itemgetter(2), reverse=True)
 		print('\n post fill:')
 		pprint(post_fill)
@@ -124,6 +125,7 @@ while True:
 		block_predict.write('\nfill_gain:\n')
 		while n < len(post_fill):
 
+# caculate the progression size and penalty list calls "Fill & Gain"
 			fee_add = fee_add + post_fill[num][0]
 			fill_add = fill_add + post_fill[num][1]
 			penalty_add = ( (fill + fill_add) / dyn_size - 1)**2
@@ -138,6 +140,7 @@ while True:
 		print('\n Fill & Gain:')
 		pprint (fill_gain)
 
+# sort the Fill & Gain list and find the best solution
 		fill_gain.sort(key=itemgetter(1), reverse=True)
 
 		print('\n Fill & Gain sorted:')
@@ -152,6 +155,8 @@ while True:
 			print('\n Final adds:')
 			pprint (fianal_add)
 
+# use best solution's size as final block size
+# add best solution's fee to first fill's fee
 			fill = fianal_add[0]
 			block_fee = block_fee + fianal_add[1]
 
