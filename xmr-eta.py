@@ -180,6 +180,8 @@ while True:
 
 	last_check = time.time()
 	
-	print(' Wait for next update in %ds ...'% check_period)
-	while check_period > (time.time()-last_check):
-		a = 1
+	print('\n Wait for next update in %ds ...'% check_period)
+	while True:
+		time.sleep(1)
+		if (time.time()-last_check) > check_period:
+			break
