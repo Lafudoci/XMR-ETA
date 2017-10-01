@@ -30,7 +30,7 @@ def getjson(arg):
 				print(' JSON OK')
 				break
 			else:
-				print(' ERROR:'+ jsontext['error'])
+				print(' ERROR:'+ jsontext['status'])
 				print(' Retry in 10s ...\n')
 				time.sleep(10)
 				continue
