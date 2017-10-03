@@ -21,33 +21,33 @@ https://thingspeak.com/channels/321751
 
 ## Console output sample
 
-Height: 1384313
+ Height: 1412417
 
  Last block hash:
- 77981c8b4c354dbb445ad1daeae400a5946fdf5926d17b493f5a741494f2fbaa
- 
- Block size limit: 690.36 kB
+ 491e172c7973bde9cee34dcb010106f53927591bcbf960b2b578a7420e3f7fa6
 
- Predicted blockchain size per day: 249.35 mB
+ Block size hard limit: 614.40 kB
 
- Mempool txs: 136
+ Predicted blockchain size per day: 210.94 mB
 
- Mempool txs size: 25931.96 kB
+ Mempool txs: 9
 
- Med. Small tx: 12.98 kB (25 txs)
+ Valid Mempool txs size: 77.86 kB
 
- Med. big tx: 251.34 kB (111 txs)
+ Med. valid tx: 12.85 kB (6 txs)
 
- Half block block limit: 345.18 kB
+ Dynamic block size: 300.00 kB
 
- Avg. of last 30 blocks: 354.63 kB
+ Avg. of last 30 blocks: 46.26 kB
 
- Block efficiency: 102.74 %
+ Block usage: 15.42 %
 
- Approx. tx speed per hour: 439 TPH
+ Approx. tx speed per hour: 119 TPH
 
- longest small tx:  Longest wait: 02:00:45 (fee: 0.0060, size: 25.96 kB)
+ Longest valid txs wait: 00:02:17 (fee: 0.0140, size: 13.35 kB)
 
- Predicted block: 1 big_txs + 7 small_txs
+ Predicted block txs: 6 valid txs (77k) ( 26% )
 
- Average wait time: 3 +- 27 blocks ( 0 hr: 6 min )
+ Predicted block time: predict: 1, tph: 2, longest: 2
+
+ Average wait time: 1 +- 0 blocks ( 0 hr: 2 min )
