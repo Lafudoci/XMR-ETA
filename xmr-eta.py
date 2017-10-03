@@ -25,10 +25,9 @@ while True:
 	n=0
 	num=0
 	poolsize=0
-	small_txs=[]
-	big_txs=[]
+	valid_txs=[]
 	invalid_txs=[]
-	small_waits = []
+	valid_waits = []
 
 	while n < data_pool['data']['txs_no']:
 		timestamp = data_pool['data']['txs'][num]['timestamp']
@@ -40,30 +39,20 @@ while True:
 
 		if ring_size >= 5:
 
-			if txs_size < 40960:
-				small_txs.append( txs_size )
-				small_waits.append( [tx_age, fee, txs_size])
-			else:
-				big_txs.append( txs_size )
+			valid_txs.append( txs_size )
+			valid_waits.append( [tx_age, fee, txs_size])
 		
 		num = num + 1
 		n = n + 1
 
-	poolsize = sum(small_txs) + sum(big_txs)
+	poolsize = sum(valid_txs)
 
-	if len(small_txs) == 0:
+	if len(valid_txs) == 0:
 		med_small_tx = 0
-	elif len(small_txs) == 1:
-		med_small_tx = small_txs[0]
+	elif len(valid_txs) == 1:
+		med_small_tx = valid_txs[0]
 	else:
-		med_small_tx = statistics.median(small_txs)
-
-	if len(big_txs) == 0:
-		med_big_tx = 0
-	elif len(big_txs) == 1:
-		med_big_tx = big_txs[0]
-	else:
-		med_big_tx = statistics.median(big_txs)
+		med_small_tx = statistics.median(valid_txs)
 
 # parse last 30 blocks data
 	print('\n Last 30 blocks (Byte):')
@@ -96,50 +85,33 @@ while True:
 	block_usage = avg_30_size/(dyn_size)*100
 	
 # wait block caculation
-	bigs = 0
-	rest = 0
-	smalls = 0
-# predict big txs in this block
-	if len(big_txs) == 0:
-		bigs = 0
-		rest = sum(small_txs)
-		wait_block_p = int( rest / (dyn_size_exp) + 1)
-	
-	elif len(big_txs) == 1:
-		bigs = 1
-		rest = (dyn_size_exp) - med_big_tx
-		wait_block_p = int( sum(small_txs) / rest + 1)
-	
-	else:
-		bigs, rest = divmod((dyn_size_exp), med_big_tx)
-		if bigs > len(big_txs):
-			rest = rest + (bigs-len(big_txs))*med_big_tx
-			bigs = len(big_txs)
-		wait_block_p = int( sum(small_txs) / rest + 1)
+	valids = 0
+	wait_block_p = int( sum(valid_txs) / (dyn_size_exp) + 1)
 
-# predict small txs in this block
-	if len(small_txs) == 0:
-		smalls = 0
-	elif rest/med_small_tx > len(small_txs):
-		smalls = len(small_txs)
+# predict valid txs in this block
+	if len(valid_txs) == 0:
+		valids = 0
+	elif sum(valid_txs)/med_small_tx > len(valid_txs):
+		valids = len(valid_txs)
 	else:
-		smalls = int(rest/med_small_tx)
+		valids = int(sum(valid_txs)/med_small_tx)
 
 # predict the block size
-	this_block = bigs*med_big_tx + smalls*med_small_tx
-	this_block_efficiency = this_block/dyn_size*100
-	
-# longest small txs wait
-	wait_block_longest = 0
 
-	if len(small_waits) != 0:
-		longest_small = ' Longest small wait: %s (fee: %.4f, size: %.2f kB)\n' % (time.strftime("%H:%M:%S",time.gmtime(small_waits[-1][0])), small_waits[-1][1], small_waits[-1][2]/1024)
-		wait_block_longest = int(small_waits[-1][0]/120 +1)
+	this_block = valids*med_small_tx
+	this_block_load = this_block/dyn_size*100
+	
+# longest valid txs wait
+	wait_block_longest = 1
+
+	if len(valid_waits) != 0:
+		longest_valid = ' Longest valid txs wait: %s (fee: %.4f, size: %.2f kB)\n' % (time.strftime("%H:%M:%S",time.gmtime(valid_waits[-1][0])), valid_waits[-1][1], valid_waits[-1][2]/1024)
+		wait_block_longest = int(valid_waits[-1][0]/120 +1)
 	else:
-		longest_small = ' No small tx is waiting'
+		longest_valid = ' No small tx is waiting'
 
 # compensate with TPH (experimental method)
-	wait_block_tph = int( len(small_txs)/(tph/60*2) +1)
+	wait_block_tph = int( len(valid_txs)/(tph/60*2) +1)
 
 	wait_block = int(( wait_block_p + wait_block_tph)/2)
 	wait_block_sd = int(statistics.pstdev ([wait_block_p , wait_block_tph , wait_block_longest]))
@@ -154,32 +126,31 @@ while True:
 	print(' Block size hard limit: %.2f kB\n' % (dyn_size*2/1000) )
 	print(' Predicted blockchain size per day: %.2f mB\n' % block_mb_day )
 	print(' Mempool txs: %d\n' % pooltxs)
-	print(' Mempool txs size: %.2f kB\n' % (poolsize/1024) )
-	print(' Med. Small tx: %.2f kB (%d txs)\n' % (med_small_tx/1024, len(small_txs)))
-	print(' Med. big tx: %.2f kB (%d txs)\n' % (med_big_tx/1024, len(big_txs)))
+	print(' Valid Mempool txs size: %.2f kB\n' % (poolsize/1024) )
+	print(' Med. valid tx: %.2f kB (%d txs)\n' % (med_small_tx/1024, len(valid_txs)))
 	print(' Dynamic block size: %.2f kB\n' % (dyn_size/1024) )
 	print(' Avg. of last 30 blocks: %.2f kB\n' % (avg_30_size/1024) )
 	print(' Block usage: %.2f %%\n' % block_usage )
 	print(' Approx. tx speed per hour: %d TPH\n' % tph)
-	print( longest_small )
-	print(' Predicted block txs: %d big (%.fk) + %d small (%.fk) ( %.0f%% )\n' % (int(bigs), bigs*med_big_tx/1024, int(smalls), smalls*med_small_tx/1024, this_block_efficiency))
+	print( longest_valid )
+	print(' Predicted block txs: %d valid txs (%.fk) ( %.0f%% )\n' % (int(valids), valids*med_small_tx/1024, this_block_load))
 	print(' Predicted block time: predict: %d, tph: %d, longest: %d\n' % (wait_block_p, wait_block_tph, wait_block_longest))
 	print(' Average wait time: %d +- %d blocks ( %d hr: %d min )\n' % (wait_block, wait_block_sd, wait_hr, wait_min))
 
 	
 # update thingspeak
-	thingspeak_key = open('thingspeak_key.txt', 'r')
-	url_thingspeak = 'https://api.thingspeak.com/update?api_key='+ thingspeak_key.readline()
-	thingspeak_key.close()
-	url_data = '&field1=%.2f&field2=%.2f&field3=%.2f&field4=%.2f&field5=%d&field6=%d&field7=%d&field8=%d' % ((poolsize/1024), (dyn_size*2/1024), (avg_30_size/1024), block_usage, tph, (wait_block*2), len(small_txs), len(big_txs))
-	print('\n GET '+ url_thingspeak[8:] + url_data)
-	try:
-		resp_thingspeak = requests.get(url=url_thingspeak+url_data)
-	except requests.exceptions.RequestException as err:
-		print(' ERROR: '+ str(err))
+	# thingspeak_key = open('thingspeak_key.txt', 'r')
+	# url_thingspeak = 'https://api.thingspeak.com/update?api_key='+ thingspeak_key.readline()
+	# thingspeak_key.close()
+	# url_data = '&field1=%.2f&field2=%.2f&field3=%.2f&field4=%.2f&field5=%d&field6=%d&field7=%d' % ((poolsize/1024), (dyn_size*2/1024), (avg_30_size/1024), block_usage, tph, (wait_block*2), len(valid_txs))
+	# print('\n GET '+ url_thingspeak[8:] + url_data)
+	# try:
+	# 	resp_thingspeak = requests.get(url=url_thingspeak+url_data)
+	# except requests.exceptions.RequestException as err:
+	# 	print(' ERROR: '+ str(err))
 	
-	print(' HTTP:'+ str(resp_thingspeak))
-	print(' Entry:'+ str(resp_thingspeak.text))
+	# print(' HTTP:'+ str(resp_thingspeak))
+	# print(' Entry:'+ str(resp_thingspeak.text))
 		
 
 	last_check = time.time()
