@@ -27,21 +27,24 @@ while True:
 	poolsize=0
 	small_txs=[]
 	big_txs=[]
+	invalid_txs=[]
 	small_waits = []
-	big_fees = []
+
 	while n < data_pool['data']['txs_no']:
 		timestamp = data_pool['data']['txs'][num]['timestamp']
 		txs_size = data_pool['data']['txs'][num]['tx_size']
 		fee = data_pool['data']['txs'][num]['tx_fee']/float(1e12)
+		ring_size = data_pool['data']['txs'][num]['mixin']
 
 		tx_age = int(time.time() - timestamp)
 
-		if txs_size < 40960:
-			small_txs.append( txs_size )
-			small_waits.append( [tx_age, fee, txs_size])
-		else:
-			big_txs.append( txs_size )
-			big_fees.append( [tx_age, fee, txs_size])
+		if ring_size >= 5:
+
+			if txs_size < 40960:
+				small_txs.append( txs_size )
+				small_waits.append( [tx_age, fee, txs_size])
+			else:
+				big_txs.append( txs_size )
 		
 		num = num + 1
 		n = n + 1
@@ -127,9 +130,10 @@ while True:
 	this_block_efficiency = this_block/dyn_size*100
 	
 # longest small txs wait
+	wait_block_longest = 0
+
 	if len(small_waits) != 0:
 		longest_small = ' Longest small wait: %s (fee: %.4f, size: %.2f kB)\n' % (time.strftime("%H:%M:%S",time.gmtime(small_waits[-1][0])), small_waits[-1][1], small_waits[-1][2]/1024)
-# compensate with longest wait (experimental method)
 		wait_block_longest = int(small_waits[-1][0]/120 +1)
 	else:
 		longest_small = ' No small tx is waiting'
