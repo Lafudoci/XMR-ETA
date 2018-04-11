@@ -40,3 +40,6 @@ def getjson(arg):
 			continue
 
 	return jsontext
+
+if __name__ == '__main__':
+	print(getjson('networkinfo'))
