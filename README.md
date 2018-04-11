@@ -1,8 +1,8 @@
 # XMR-ETA
 
-This is a tool to predict the Estimated Time of Arrival of Monero (XMR) transaction.
+This tool predicts the Estimated Time of Arrival of Monero (XMR) transaction.
 
-After caculation, informatino will be uploaded to ThingSpeak database.
+The scripts get mempool and block data from [xmrchain.net explore](https://xmrchain.net/). After caculation, informatino will be uploaded to ThingSpeak database for further usage.
 
 ## Demo page:
 https://xmr-tw.org/xmr-eta/
