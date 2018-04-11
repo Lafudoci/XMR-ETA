@@ -1,5 +1,5 @@
 import requests, statistics, math, time
-
+from datetime import datetime
 from pprint import pprint
 
 import xmrchainapi
@@ -154,9 +154,10 @@ while True:
 		
 
 	last_check = time.time()
-	
+	update_time_stamp = str(datetime.now().isoformat(timespec='minutes'))
+	print('\n %s update finished'% update_time_stamp)
 	print('\n Wait for next update in %ds ...'% check_period)
 	while True:
-		time.sleep(1)
+		time.sleep(10)
 		if (time.time()-last_check) > check_period:
 			break
