@@ -145,7 +145,7 @@ while True:
 	# url_data = '&field1=%.2f&field2=%.2f&field3=%.2f&field4=%.2f&field5=%d&field6=%d&field7=%d' % ((poolsize/1024), (dyn_size*2/1024), (avg_30_size/1024), block_usage, tph, (wait_block*2), len(valid_txs))
 	# print('\n GET '+ url_thingspeak[8:] + url_data)
 	# try:
-	# 	resp_thingspeak = requests.get(url=url_thingspeak+url_data)
+	# 	resp_thingspeak = requests.get(url=url_thingspeak+url_data, timeout=20)
 	# except requests.exceptions.RequestException as err:
 	# 	print(' ERROR: '+ str(err))
 	
