@@ -4,7 +4,7 @@ import json, requests, time
 def getjson(arg):
 
 	# get network data
-	url = ('https://xmrchain.net/api/%s' % (arg))
+	url = ('https://moneroexplorer.org/api/%s' % (arg))
 	print('\n Connecting to: '+ url[7:])
 
 	while True: 
