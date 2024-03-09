@@ -2,7 +2,7 @@
 
 This tool predicts the Estimated Time of Arrival of Monero (XMR) transaction.
 
-The scripts get mempool and block data from [xmrchain.net explore](https://xmrchain.net/). After caculation, informatino will be uploaded to ThingSpeak database for further usage.
+The scripts get mempool and block data from [moneroexplorer.org](https://moneroexplorer.org/). After caculation, informatino will be uploaded to ThingSpeak database for further usage.
 
 ## Demo page:
 https://xmr-tw.org/xmr-eta/
@@ -21,33 +21,33 @@ https://thingspeak.com/channels/321751
 
 ## Console output sample
 
- Height: 1412417
+ Height: 3101382
 
  Last block hash:
- 491e172c7973bde9cee34dcb010106f53927591bcbf960b2b578a7420e3f7fa6
+ b437202c12c100d345ea171d98658a2e58b76560c8f3a66bbda851fff987d542
 
- Block size hard limit: 614.40 kB
+ Block size hard limit: 705.51 kB
 
- Predicted blockchain size per day: 210.94 mB
+ Predicted blockchain size per day: 248.03 mB
 
- Mempool txs: 9
+ Mempool txs: 1095
 
- Valid Mempool txs size: 77.86 kB
+ Valid Mempool txs size: 5198.83 kB
 
- Med. valid tx: 12.85 kB (6 txs)
+ Median valid tx: 1.50 kB (1095 txs)
 
- Dynamic block size: 300.00 kB
+ Median size of 100 blocks: 352.75 kB
 
- Avg. of last 30 blocks: 46.26 kB
+ Median size of last 30 blocks: 353.85 kB
 
- Block usage: 15.42 %
+ Median size of last 10 blocks: 354.18 kB
 
- Approx. tx speed per hour: 119 TPH
+ Median usage of last 10 blocks: 100.40 %
 
- Longest valid txs wait: 00:02:17 (fee: 0.0140, size: 13.35 kB)
+ Approx. tx per hour (30 blocks): 5531 TPH
 
- Predicted block txs: 6 valid txs (77k) ( 26% )
+ Longest valid txs wait: 00:11:57 (fee: 0.001062, size: 51.84 kB)
 
- Predicted block time: predict: 1, tph: 2, longest: 2
+ Predicted block time: predict: 15, tph: 6, longest: 6
 
- Average wait time: 1 +- 0 blocks ( 0 hr: 2 min )
+ Average wait time: 10 +- 4 blocks ( 0 hr: 20 min )
